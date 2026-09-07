@@ -5,6 +5,7 @@
     "preview": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
+      "ios": { "simulator": true },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://xfqkicnhqhbmbcedgmvy.supabase.co",
         "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_IYgIX8EhBNYRy5VeNxHeew_xhSr-s84",
