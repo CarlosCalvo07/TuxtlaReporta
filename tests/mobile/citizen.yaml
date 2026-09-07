@@ -1,0 +1,18 @@
+appId: mx.tuxtla.reporta
+---
+- launchApp
+- assertVisible: "Tu ciudad, en tus manos"
+- tapOn: "Registrarme como ciudadano"
+- assertVisible: "Crea tu cuenta"
+- tapOn: "Nombre(s)"
+- inputText: "Ana"
+- tapOn: "Apellido paterno"
+- inputText: "Perez"
+- tapOn: "Apellido materno (si aplica)"
+- inputText: "Lopez"
+- tapOn: "CURP"
+- inputText: "INVALIDA"
+- scrollUntilVisible:
+    element: "Crear cuenta"
+- tapOn: "Crear cuenta"
+- assertVisible: "Revisa los campos indicados."

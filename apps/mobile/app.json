@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Tuxtla Reporta",
+    "slug": "tuxtla-reporta",
+    "scheme": "tuxtlareporta",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "jsEngine": "hermes",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "mx.tuxtla.reporta",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Usamos tu ubicación solo cuando eliges localizar la incidencia por GPS."
+      }
+    },
+    "android": {
+      "package": "mx.tuxtla.reporta",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Permite localizar la incidencia. También puedes indicar la ubicación en el mapa."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Selecciona evidencia de la incidencia.",
+          "cameraPermission": "Toma fotografías de la incidencia y su solución."
+        }
+      ],
+      "expo-notifications"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "icon": "./assets/icon.png",
+    "extra": {
+      "eas": {
+        "projectId": "74059b0c-c726-44fd-b8ca-f49b2f3c37cc"
+      }
+    }
+  }
+}

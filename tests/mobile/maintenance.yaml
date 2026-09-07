@@ -1,0 +1,13 @@
+appId: mx.tuxtla.reporta
+env:
+  EMAIL: ${MAESTRO_EMAIL}
+  PASSWORD: ${MAESTRO_PASSWORD}
+---
+- launchApp
+- tapOn: "Correo electrónico"
+- inputText: ${EMAIL}
+- tapOn: "Contraseña"
+- inputText: ${PASSWORD}
+- tapOn: "Iniciar sesión"
+- assertVisible: "Mis asignaciones"
+- assertNotVisible: "Operación de la ciudad"

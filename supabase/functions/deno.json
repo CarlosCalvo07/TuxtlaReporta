@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.115.0",
+    "zod": "npm:zod@4.5.4",
+    "@tuxtla/types": "../../packages/types/src/index.ts"
+  },
+  "compilerOptions": { "strict": true }
+}
