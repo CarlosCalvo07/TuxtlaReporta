@@ -4,7 +4,13 @@
     "development": { "developmentClient": true, "distribution": "internal" },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://xfqkicnhqhbmbcedgmvy.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_IYgIX8EhBNYRy5VeNxHeew_xhSr-s84",
+        "EXPO_PUBLIC_APP_ENV": "development",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "74059b0c-c726-44fd-b8ca-f49b2f3c37cc"
+      }
     },
     "production": { "autoIncrement": true }
   },
