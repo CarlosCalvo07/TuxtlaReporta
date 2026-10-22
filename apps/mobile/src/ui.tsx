@@ -1,3 +1,10 @@
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
 import {
   ScrollView,
   Text,
@@ -5,66 +12,385 @@ import {
   Pressable,
   StyleSheet,
   View,
+  Image,
   type TextInputProps,
 } from "react-native";
-import type { ReactNode } from "react";
+import * as SecureStore from "expo-secure-store";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+export type ThemeMode = "dark" | "light";
+
+export const darkColors = {
+  background: "#060d1a",
+  card: "rgba(12, 24, 46, 0.85)",
+  border: "rgba(0, 210, 238, 0.2)",
+  text: "#ffffff",
+  textSecondary: "#94a3b8",
+  textMuted: "#64748b",
+  inputBg: "#040913",
+  inputBorder: "rgba(0, 210, 238, 0.25)",
+  buttonPrimary: "#ff3366",
+  buttonSecondary: "rgba(9, 21, 42, 0.85)",
+  secondaryBorder: "#00d2ee",
+  secondaryText: "#00d2ee",
+  chipBg: "rgba(10, 20, 38, 0.85)",
+  chipActiveBg: "rgba(0, 210, 238, 0.18)",
+  chipBorder: "rgba(255, 255, 255, 0.12)",
+  chipActiveBorder: "#00d2ee",
+  chipText: "#94a3b8",
+  chipTextActive: "#ffffff",
+};
+
+export const lightColors = {
+  background: "#f1f5f9",
+  card: "#ffffff",
+  border: "rgba(0, 150, 199, 0.25)",
+  text: "#0a192f",
+  textSecondary: "#475569",
+  textMuted: "#64748b",
+  inputBg: "#ffffff",
+  inputBorder: "#cbd5e1",
+  buttonPrimary: "#ff2a5f",
+  buttonSecondary: "#ffffff",
+  secondaryBorder: "#0284c7",
+  secondaryText: "#0284c7",
+  chipBg: "#f8fafc",
+  chipActiveBg: "rgba(0, 150, 199, 0.12)",
+  chipBorder: "#cbd5e1",
+  chipActiveBorder: "#0284c7",
+  chipText: "#475569",
+  chipTextActive: "#0a192f",
+};
+
+interface ThemeContextType {
+  mode: ThemeMode;
+  toggle: () => void;
+  colors: typeof darkColors;
+}
+
+const ThemeContext = createContext<ThemeContextType>({
+  mode: "dark",
+  toggle: () => {},
+  colors: darkColors,
+});
+
+const THEME_STORAGE_KEY = "tuxtla_mobile_theme";
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [mode, setMode] = useState<ThemeMode>("dark");
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const saved = await SecureStore.getItemAsync(THEME_STORAGE_KEY);
+        if (saved === "dark" || saved === "light") {
+          setMode(saved);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  const toggle = () => {
+    setMode((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      void SecureStore.setItemAsync(THEME_STORAGE_KEY, next).catch(() => {});
+      return next;
+    });
+  };
+
+  const colors = mode === "dark" ? darkColors : lightColors;
+
+  return (
+    <ThemeContext.Provider value={{ mode, toggle, colors }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export function useTheme() {
+  return useContext(ThemeContext);
+}
+
 export const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#f5f6f2" },
-  content: { padding: 22, paddingBottom: 60, gap: 16 },
-  title: { fontSize: 29, fontWeight: "700", color: "#173f35", marginBottom: 8 },
-  subtitle: { fontSize: 14, lineHeight: 22, color: "#637262" },
-  card: {
-    backgroundColor: "white",
-    padding: 18,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e0e6d9",
-    gap: 12,
+  screen: {
+    flex: 1,
+    backgroundColor: "#060d1a",
   },
-  label: { fontSize: 13, fontWeight: "600", color: "#40553e", marginBottom: 7 },
+  content: {
+    padding: 20,
+    paddingBottom: 60,
+    gap: 16,
+  },
+  title: {
+    fontSize: 27,
+    fontWeight: "800",
+    color: "#ffffff",
+    marginBottom: 6,
+    letterSpacing: -0.6,
+  },
+  subtitle: {
+    fontSize: 13.5,
+    lineHeight: 21,
+    color: "#94a3b8",
+  },
+  card: {
+    backgroundColor: "rgba(12, 24, 46, 0.78)",
+    padding: 18,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "rgba(0, 210, 238, 0.2)",
+    gap: 13,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  label: {
+    fontSize: 11.5,
+    fontWeight: "700",
+    color: "#00d2ee",
+    marginBottom: 7,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
   input: {
     borderWidth: 1,
-    borderColor: "#cdd8c7",
-    borderRadius: 8,
+    borderColor: "rgba(0, 210, 238, 0.25)",
+    borderRadius: 10,
     padding: 13,
-    fontSize: 16,
-    backgroundColor: "white",
-    color: "#263e2a",
+    fontSize: 15,
+    backgroundColor: "#040913",
+    color: "#f0f6fc",
     minHeight: 48,
   },
   button: {
-    padding: 15,
-    backgroundColor: "#173f35",
-    borderRadius: 9,
+    padding: 14,
+    backgroundColor: "#ff3366",
+    borderRadius: 11,
     alignItems: "center",
+    justifyContent: "center",
     minHeight: 49,
+    shadowColor: "#ff3366",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  buttonText: { color: "white", fontSize: 15, fontWeight: "600" },
-  secondary: { backgroundColor: "#e7eedc" },
-  secondaryText: { color: "#315239" },
+  buttonText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  secondary: {
+    backgroundColor: "rgba(9, 21, 42, 0.85)",
+    borderWidth: 1,
+    borderColor: "#00d2ee",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  secondaryText: {
+    color: "#00d2ee",
+    fontWeight: "700",
+  },
   error: {
-    padding: 13,
-    color: "#904529",
-    backgroundColor: "#fff0e8",
-    borderRadius: 8,
+    padding: 14,
+    color: "#ff859e",
+    backgroundColor: "rgba(255, 51, 102, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 51, 102, 0.35)",
+    borderRadius: 10,
+    fontSize: 13,
   },
-  row: { flexDirection: "row", gap: 9, flexWrap: "wrap" },
-  chip: { padding: 11, borderRadius: 8, backgroundColor: "#e9eee2" },
-  chipActive: { backgroundColor: "#c7d9b3" },
-  small: { fontSize: 12, color: "#6d7d64", lineHeight: 19 },
-  heading: { fontSize: 18, fontWeight: "600", color: "#284328" },
+  row: {
+    flexDirection: "row",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  chip: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 9,
+    backgroundColor: "rgba(10, 20, 38, 0.85)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+  },
+  chipActive: {
+    backgroundColor: "rgba(0, 210, 238, 0.18)",
+    borderColor: "#00d2ee",
+  },
+  chipText: {
+    color: "#94a3b8",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  chipTextActive: {
+    color: "#ffffff",
+    fontWeight: "700",
+  },
+  small: {
+    fontSize: 12,
+    color: "#64748b",
+    lineHeight: 18,
+  },
+  heading: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#ffffff",
+    letterSpacing: -0.2,
+  },
+  badge: {
+    alignSelf: "flex-start",
+    paddingVertical: 4,
+    paddingHorizontal: 9,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  badgeRecibido: {
+    backgroundColor: "rgba(0, 210, 238, 0.12)",
+    borderColor: "rgba(0, 210, 238, 0.4)",
+  },
+  badgeRevision: {
+    backgroundColor: "rgba(255, 184, 0, 0.15)",
+    borderColor: "rgba(255, 184, 0, 0.4)",
+  },
+  badgeAtencion: {
+    backgroundColor: "rgba(59, 130, 246, 0.18)",
+    borderColor: "rgba(59, 130, 246, 0.4)",
+  },
+  badgeSolucionado: {
+    backgroundColor: "rgba(0, 230, 153, 0.15)",
+    borderColor: "rgba(0, 230, 153, 0.4)",
+  },
 });
-export function Screen({ children }: { children: ReactNode }) {
+
+export function BrandHeader({
+  title,
+  subtitle,
+  showToggle = true,
+}: {
+  title?: string;
+  subtitle?: string;
+  showToggle?: boolean;
+}) {
+  const { mode, toggle, colors } = useTheme();
+
+  return (
+    <View style={{ marginBottom: 18 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 12,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <Image
+            source={require("../assets/logo.png")}
+            style={{ width: 44, height: 44 }}
+            resizeMode="contain"
+          />
+          <View>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "900",
+                color: colors.text,
+                letterSpacing: 0.5,
+              }}
+            >
+              TUXTLA <Text style={{ color: "#00d2ee" }}>REPORTA</Text>
+            </Text>
+            <Text
+              style={{
+                fontSize: 9.5,
+                fontWeight: "700",
+                color: "#ff3366",
+                letterSpacing: 2,
+              }}
+            >
+              PLATAFORMA URBANA DIGITAL
+            </Text>
+          </View>
+        </View>
+        {showToggle && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar modo claro u oscuro"
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            onPress={toggle}
+            style={({ pressed }) => ({
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              backgroundColor: colors.card,
+              borderWidth: 1.5,
+              borderColor: colors.border,
+              paddingVertical: 8,
+              paddingHorizontal: 13,
+              borderRadius: 20,
+              elevation: 3,
+              opacity: pressed ? 0.75 : 1,
+            })}
+          >
+            <Text
+              style={{
+                fontSize: 12.5,
+                fontWeight: "700",
+                color: colors.text,
+              }}
+            >
+              {mode === "dark" ? "☀️ Claro" : "🌙 Oscuro"}
+            </Text>
+          </Pressable>
+        )}
+      </View>
+      {title && (
+        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      )}
+      {subtitle && (
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          {subtitle}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+export function Screen({
+  children,
+  safeTop = true,
+}: {
+  children: ReactNode;
+  safeTop?: boolean;
+}) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const topInset = safeTop ? Math.max(insets.top + 10, 48) : 16;
+  const bottomInset = Math.max(insets.bottom + 24, 50);
+
   return (
     <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
+      style={[styles.screen, { backgroundColor: colors.background }]}
+      contentContainerStyle={[
+        styles.content,
+        {
+          paddingTop: topInset,
+          paddingBottom: bottomInset,
+          paddingLeft: Math.max(insets.left, 20),
+          paddingRight: Math.max(insets.right, 20),
+        },
+      ]}
       keyboardShouldPersistTaps="handled"
     >
       {children}
     </ScrollView>
   );
 }
+
 export function Button({
   title,
   onPress,
@@ -76,6 +402,8 @@ export function Button({
   disabled?: boolean;
   secondary?: boolean;
 }) {
+  const { colors } = useTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -84,29 +412,53 @@ export function Button({
       onPress={onPress}
       style={[
         styles.button,
-        secondary && styles.secondary,
+        { backgroundColor: colors.buttonPrimary },
+        secondary && [
+          styles.secondary,
+          {
+            backgroundColor: colors.buttonSecondary,
+            borderColor: colors.secondaryBorder,
+          },
+        ],
         disabled && { opacity: 0.45 },
       ]}
     >
-      <Text style={[styles.buttonText, secondary && styles.secondaryText]}>
+      <Text
+        style={[
+          styles.buttonText,
+          secondary && { color: colors.secondaryText },
+        ]}
+      >
         {title}
       </Text>
     </Pressable>
   );
 }
+
 export function Field({ label, ...props }: TextInputProps & { label: string }) {
+  const { colors } = useTheme();
+
   return (
     <View>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
-        placeholderTextColor="#91a087"
+        placeholderTextColor={colors.textMuted}
         {...props}
-        style={[styles.input, props.style]}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.inputBg,
+            borderColor: colors.inputBorder,
+            color: colors.text,
+          },
+          props.style,
+        ]}
       />
     </View>
   );
 }
+
 export function Choices({
   label,
   options,
@@ -118,21 +470,48 @@ export function Choices({
   value: string;
   onChange: (id: string) => void;
 }) {
+  const { colors } = useTheme();
+
   return (
     <View>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.row}>
-        {options.map((x) => (
-          <Pressable
-            accessibilityRole="radio"
-            accessibilityState={{ checked: value === x.id }}
-            key={x.id}
-            onPress={() => onChange(x.id)}
-            style={[styles.chip, value === x.id && styles.chipActive]}
-          >
-            <Text>{x.name}</Text>
-          </Pressable>
-        ))}
+        {options.map((x) => {
+          const active = value === x.id;
+          return (
+            <Pressable
+              accessibilityRole="radio"
+              accessibilityState={{ checked: active }}
+              key={x.id}
+              onPress={() => onChange(x.id)}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: active
+                    ? colors.chipActiveBg
+                    : colors.chipBg,
+                  borderColor: active
+                    ? colors.chipActiveBorder
+                    : colors.chipBorder,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  {
+                    color: active
+                      ? colors.chipTextActive
+                      : colors.chipText,
+                    fontWeight: active ? "700" : "500",
+                  },
+                ]}
+              >
+                {x.name}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );

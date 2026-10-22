@@ -7,26 +7,34 @@ import {
   rateLimit,
 } from "../_shared/http.ts";
 import { z } from "zod";
+
 endpoint(async (req) => {
   const actor = await authenticated(req);
-  if (actor.role !== "admin") throw new Error("Forbidden");
+  if (actor.role !== "admin") throw new Error("Forbidden: Solo administradores pueden crear personal");
   await rateLimit(`staff:${actor.user.id}`, 20);
   const data = z
     .object({
-      email: z.email(),
+      email: z.string().email(),
       name: z.string().trim().min(2).max(200),
       role: z.enum(["admin", "maintenance"]),
-      areas: z.array(z.uuid()).max(20),
+      areas: z.array(z.string().uuid()).max(20),
     })
     .parse(await req.json());
   if (data.role === "maintenance" && !data.areas.length)
-    throw new Error("Area required");
+    throw new Error("Área requerida para el personal de mantenimiento");
   const server = admin();
   const { data: created, error } = await server.auth.admin.createUser({
     email: data.email,
     email_confirm: false,
   });
-  if (error || !created.user) throw new Error("Create failed");
+  if (error || !created?.user) {
+    console.error("Admin createUser error:", error);
+    let msg = error?.message || "No se pudo registrar el usuario";
+    if (msg.includes("already been registered") || msg.includes("already registered")) {
+      msg = "Ya existe un usuario registrado con este correo electrónico.";
+    }
+    throw new Error(msg);
+  }
   const result = await server.rpc("provision_staff", {
     uid: created.user.id,
     name: data.name,
@@ -35,18 +43,34 @@ endpoint(async (req) => {
     actor: actor.user.id,
   });
   if (result.error) {
+    console.error("provision_staff error:", result.error);
     await server.auth.admin.deleteUser(created.user.id);
-    throw result.error;
+    let msg = result.error.message || "Error al asignar perfil de personal";
+    if (msg.includes("FORBIDDEN")) {
+      msg = "No tienes permisos suficientes para realizar esta acción.";
+    } else if (msg.includes("AREA_REQUIRED")) {
+      msg = "Debes seleccionar al menos un área autorizada para el personal de mantenimiento.";
+    }
+    throw new Error(msg);
+  }
+  let redirectUrl: string | undefined;
+  try {
+    redirectUrl = env("STAFF_AUTH_REDIRECT");
+  } catch {
+    redirectUrl = Deno.env.get("WEB_ORIGIN") || undefined;
   }
   const invite = await server.auth.resetPasswordForEmail(data.email, {
-    redirectTo: env("STAFF_AUTH_REDIRECT"),
+    ...(redirectUrl ? { redirectTo: redirectUrl } : {}),
   });
-  if (invite.error)
+  if (invite.error) {
+    console.warn("resetPasswordForEmail warning:", invite.error);
     return response({
       message:
         "Usuario creado. Reenvía el correo de acceso desde recuperación de contraseña.",
     });
+  }
   return response({
     message: "Usuario creado. Revisa el correo para establecer acceso.",
   });
 });
+

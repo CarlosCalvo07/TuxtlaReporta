@@ -28,8 +28,26 @@ const query = new QueryClient({
     mutations: { retry: false },
   },
 });
+
+function useTheme() {
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    return (
+      (localStorage.getItem("tuxtla_theme") as "dark" | "light") || "dark"
+    );
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("tuxtla_theme", theme);
+  }, [theme]);
+
+  const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+  return { theme, toggle };
+}
+
 function Login() {
   const session = useSession();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [message, setMessage] = useState(""),
@@ -37,8 +55,28 @@ function Login() {
   return (
     <main className="login">
       <section className="login-story">
-        <div className="brand">
-          <span className="brandmark">T.</span> TUXTLA REPORTA
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div className="brand">
+            <img src="/logo.png" alt="Tuxtla Reporta" className="brand-logo" />
+            <div className="brand-text">
+              <span className="brand-title">TUXTLA</span>
+              <span className="brand-sub">REPORTA</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title="Cambiar tema"
+          >
+            {theme === "dark" ? "☀️ Claro" : "🌙 Oscuro"}
+          </button>
         </div>
         <div>
           <p className="eyebrow">SERVICIOS URBANOS · TUXTLA GUTIÉRREZ</p>
@@ -196,6 +234,7 @@ function Privacy() {
 function Workspace() {
   const s = useSession(),
     cache = useQueryClient();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [online, setOnline] = useState(navigator.onLine),
     [menu, setMenu] = useState(false);
   useEffect(() => {
@@ -226,10 +265,11 @@ function Workspace() {
     <div className="workspace">
       <aside className={menu ? "sidebar open" : "sidebar"}>
         <Link to="/" className="brand">
-          <span className="brandmark">T.</span>
-          <span>
-            Tuxtla<span className="brand-sub">REPORTA</span>
-          </span>
+          <img src="/logo.png" alt="Tuxtla Reporta" className="brand-logo" />
+          <div className="brand-text">
+            <span className="brand-title">TUXTLA</span>
+            <span className="brand-sub">REPORTA</span>
+          </div>
         </Link>
         <span className="nav-caption">GESTIÓN URBANA</span>
         <nav onClick={() => setMenu(false)}>
@@ -257,6 +297,9 @@ function Workspace() {
           )}
         </nav>
         <div className="sidebar-bottom">
+          <div className="telemetry-status">
+            <span className="pulse-dot"></span> SISTEMA EN LÍNEA
+          </div>
           <p>
             Tuxtla Gutiérrez
             <br />
@@ -283,15 +326,27 @@ function Workspace() {
           >
             ☰
           </button>
-          <span>Plataforma de atención ciudadana</span>
-          <div className="user">
-            <span className="avatar">{s.name.slice(0, 1)}</span>
-            <span>
-              {s.name}
-              <small>
-                {s.role === "admin" ? "Administración" : "Mantenimiento"}
-              </small>
-            </span>
+          <div className="topbar-tag">
+            <span className="pulse-dot"></span> CENTRO DE COMANDO URBANO · TUXTLA
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button
+              type="button"
+              className="theme-toggle"
+              onClick={toggleTheme}
+              title="Cambiar entre modo claro y modo oscuro"
+            >
+              {theme === "dark" ? "☀️ Modo Claro" : "🌙 Modo Oscuro"}
+            </button>
+            <div className="user">
+              <span className="avatar">{s.name.slice(0, 1).toUpperCase()}</span>
+              <div>
+                <strong>{s.name}</strong>
+                <small>
+                  {s.role === "admin" ? "Administración" : "Mantenimiento"}
+                </small>
+              </div>
+            </div>
           </div>
         </header>
         {!online && (

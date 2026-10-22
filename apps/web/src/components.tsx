@@ -5,7 +5,12 @@ import type { Report, ReportStatus } from "@tuxtla/types";
 import { statusLabels } from "@tuxtla/types";
 import { friendlyError } from "@tuxtla/shared";
 export function Badge({ status }: { status: ReportStatus }) {
-  return <span className={`badge ${status}`}>● {statusLabels[status]}</span>;
+  return (
+    <span className={`badge ${status}`}>
+      <span className="pulse-dot"></span>
+      {statusLabels[status]}
+    </span>
+  );
 }
 export function ErrorNotice({ error }: { error: unknown }) {
   return error ? (
@@ -30,10 +35,31 @@ export function Map({
     if (!ref.current) return;
     const instance = L.map(ref.current).setView([16.753, -93.116], 13);
     map.current = instance;
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-      maxZoom: 19,
-    }).addTo(instance);
+
+    let currentTiles: L.TileLayer | null = null;
+    const updateTiles = () => {
+      const isLight =
+        document.documentElement.getAttribute("data-theme") === "light";
+      const url = isLight
+        ? "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+        : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+
+      if (currentTiles) instance.removeLayer(currentTiles);
+      currentTiles = L.tileLayer(url, {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        maxZoom: 19,
+        subdomains: "abcd",
+      }).addTo(instance);
+    };
+
+    updateTiles();
+    const observer = new MutationObserver(updateTiles);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
     layer.current = L.layerGroup().addTo(instance);
     const update = () => {
       const b = instance.getBounds();
@@ -47,6 +73,7 @@ export function Map({
     instance.on("moveend", update);
     update();
     return () => {
+      observer.disconnect();
       instance.remove();
       map.current = null;
     };
@@ -56,12 +83,15 @@ export function Map({
     for (const report of reports) {
       const label = document.createElement("span");
       label.textContent = report.folio;
+      label.style.fontFamily = "Space Grotesk, monospace";
+      label.style.fontWeight = "700";
+      label.style.fontSize = "11px";
       L.circleMarker([report.latitude, report.longitude], {
         radius: 8,
-        color: "#173f35",
-        fillColor: "#bad19a",
-        fillOpacity: 1,
-        weight: 3,
+        color: "#ff3366",
+        fillColor: "#00d2ee",
+        fillOpacity: 0.9,
+        weight: 2.5,
       })
         .bindTooltip(label)
         .addTo(layer.current!);

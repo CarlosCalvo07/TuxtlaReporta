@@ -4,7 +4,8 @@ import { api } from "../backend";
 import { ErrorNotice } from "../components";
 export default function Staff() {
   const cache = useQueryClient(),
-    [open, setOpen] = useState(false);
+    [open, setOpen] = useState(false),
+    [successMessage, setSuccessMessage] = useState<string | null>(null);
   const staff = useQuery({ queryKey: ["staff"], queryFn: api.staff.list });
   const areas = useQuery({ queryKey: ["areas"], queryFn: api.catalogs.areas });
   const workload = useQuery({
@@ -13,9 +14,14 @@ export default function Staff() {
   });
   const mutation = useMutation({
     mutationFn: (action: () => Promise<unknown>) => action(),
-    onSuccess: () => {
+    onSuccess: (data) => {
       void cache.invalidateQueries();
       setOpen(false);
+      if (data && typeof data === "object" && "message" in data) {
+        setSuccessMessage(String((data as { message: string }).message));
+      } else {
+        setSuccessMessage("Personal guardado exitosamente.");
+      }
     },
   });
   return (
@@ -26,8 +32,16 @@ export default function Staff() {
           <h1>Personal y carga de trabajo</h1>
           <p>Asigna las áreas que cada integrante está autorizado a atender.</p>
         </div>
-        <button onClick={() => setOpen(!open)}>+ Incorporar personal</button>
+        <button
+          onClick={() => {
+            setSuccessMessage(null);
+            setOpen(!open);
+          }}
+        >
+          {open ? "Cerrar formulario" : "+ Incorporar personal"}
+        </button>
       </div>
+      {successMessage && <p className="notice success">{successMessage}</p>}
       <ErrorNotice error={staff.error || mutation.error} />
       {open && (
         <section className="panel">

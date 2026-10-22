@@ -79,14 +79,14 @@ export default function Detail() {
   }, [r]);
   if (s.loading)
     return (
-      <Screen>
+      <Screen safeTop={false}>
         <Text>Verificando acceso…</Text>
       </Screen>
     );
   if (!s.role) return <Redirect href="/" />;
   if (!r)
     return (
-      <Screen>
+      <Screen safeTop={false}>
         <Text>
           {q.isPending ? "Cargando reporte…" : friendlyError(q.error)}
         </Text>
@@ -113,14 +113,75 @@ export default function Detail() {
     );
   }
   return (
-    <Screen>
-      <Text style={styles.small}>{r.folio}</Text>
-      <Text style={styles.title}>{statusLabels[r.status]}</Text>
+    <Screen safeTop={false}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 4,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "900",
+            color: "#00d2ee",
+            letterSpacing: 1,
+          }}
+        >
+          {r.folio}
+        </Text>
+        <View
+          style={{
+            backgroundColor:
+              r.status === "solucionado"
+                ? "rgba(0, 230, 153, 0.15)"
+                : r.status === "en_atencion"
+                  ? "rgba(59, 130, 246, 0.18)"
+                  : r.status === "en_revision"
+                    ? "rgba(255, 184, 0, 0.15)"
+                    : "rgba(0, 210, 238, 0.12)",
+            borderColor:
+              r.status === "solucionado"
+                ? "rgba(0, 230, 153, 0.4)"
+                : r.status === "en_atencion"
+                  ? "rgba(59, 130, 246, 0.4)"
+                  : r.status === "en_revision"
+                    ? "rgba(255, 184, 0, 0.4)"
+                    : "rgba(0, 210, 238, 0.3)",
+            borderWidth: 1,
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            borderRadius: 6,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: "700",
+              textTransform: "uppercase",
+              color:
+                r.status === "solucionado"
+                  ? "#00e699"
+                  : r.status === "en_atencion"
+                    ? "#60a5fa"
+                    : r.status === "en_revision"
+                      ? "#ffb800"
+                      : "#00d2ee",
+            }}
+          >
+            {statusLabels[r.status]}
+          </Text>
+        </View>
+      </View>
       <View style={styles.card}>
         <Text style={styles.heading}>
           {categories.data?.find((c) => c.id === r.category_id)?.name}
         </Text>
-        <Text>{r.description}</Text>
+        <Text style={{ fontSize: 14, color: "#cbd5e1", lineHeight: 20 }}>
+          {r.description}
+        </Text>
         <Text style={styles.small}>{dateLabel(r.created_at)}</Text>
         <Text style={styles.small}>
           {r.neighborhood || "Sin colonia especificada"} · Prioridad{" "}

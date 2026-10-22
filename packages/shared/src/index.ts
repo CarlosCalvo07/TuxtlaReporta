@@ -103,17 +103,43 @@ export type ReportFilters = {
   responsible?: string;
   unassigned?: boolean;
 };
+function safeUUID(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export function services(client: Client) {
   const call = async <T>(
     name: string,
     body: Record<string, unknown> | FormData,
   ): Promise<T> => {
     const result = await client.functions.invoke<T>(name, { body });
-    if (result.error)
+    if (result.error) {
+      let message = result.error.message;
+      if ("context" in result.error && result.error.context) {
+        try {
+          const res = (result.error.context as Response).clone();
+          const json = await res.json();
+          if (json && typeof json === "object" && "message" in json) {
+            message = String(json.message);
+          }
+        } catch {}
+      }
       throw new AppError(
         "FUNCTION",
-        "No se pudo completar la operación. Revisa los datos e inténtalo de nuevo.",
+        message ||
+          "No se pudo completar la operación. Revisa los datos e inténtalo de nuevo.",
       );
+    }
     if (result.data === null)
       throw new AppError("EMPTY", "No se recibió una respuesta.");
     return result.data;
@@ -388,6 +414,40 @@ export function services(client: Client) {
         rid?: string,
         kind: MediaType = "initial",
       ) => {
+        // En subidas iniciales de ciudadanos, intentar subida directa a Storage
+        if (kind === "initial" && !rid) {
+          try {
+            const user = (await client.auth.getUser()).data.user;
+            if (user) {
+              const path = `uploads/${user.id}/${safeUUID()}.jpg`;
+              let bodyToUpload: Blob | ArrayBuffer;
+
+              if (file instanceof Blob) {
+                bodyToUpload = file;
+              } else if (file && typeof file === "object" && "uri" in file) {
+                const res = await fetch(file.uri);
+                bodyToUpload = await res.arrayBuffer();
+              } else {
+                throw new Error("Formato de archivo inválido");
+              }
+
+              const result = await client.storage
+                .from("report-media")
+                .upload(path, bodyToUpload, {
+                  contentType: "image/jpeg",
+                  upsert: false,
+                });
+
+              if (!result.error) {
+                return { path };
+              }
+              console.warn("Direct storage upload failed, falling back to function:", result.error);
+            }
+          } catch (storageErr) {
+            console.warn("Direct storage error, falling back to function:", storageErr);
+          }
+        }
+
         const form = new FormData();
         if (file instanceof Blob) form.append("file", file, "photo.jpg");
         else form.append("file", file as unknown as Blob);

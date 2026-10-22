@@ -5,7 +5,7 @@ import { friendlyError } from "@tuxtla/shared";
 import { registrationSchema } from "@tuxtla/validation";
 import type { CitizenRegistrationInput } from "@tuxtla/types";
 import { api } from "./backend";
-import { Button, Field, Screen, styles, Choices } from "./ui";
+import { Button, Field, Screen, styles, Choices, BrandHeader } from "./ui";
 export default function Auth() {
   const [register, setRegister] = useState(false),
     [email, setEmail] = useState(""),
@@ -43,14 +43,14 @@ export default function Auth() {
   }
   return (
     <Screen>
-      <Text style={styles.title}>
-        {register ? "Crea tu cuenta" : "Tu ciudad, en tus manos"}
-      </Text>
-      <Text style={styles.subtitle}>
-        {register
-          ? "Regístrate para reportar incidencias y consultar su atención."
-          : "Reporta una incidencia o accede a tus tareas de atención urbana."}
-      </Text>
+      <BrandHeader
+        title={register ? "Crea tu cuenta ciudadana" : "Bienvenido"}
+        subtitle={
+          register
+            ? "Regístrate para reportar incidencias urbanas y dar seguimiento a su atención."
+            : "Reporta incidencias en Tuxtla Gutiérrez o accede a tus tareas operativas."
+        }
+      />
       {register ? (
         <>
           <View style={styles.card}>
