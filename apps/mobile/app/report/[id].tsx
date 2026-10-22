@@ -187,30 +187,48 @@ export default function Detail() {
           {r.neighborhood || "Sin colonia especificada"} · Prioridad{" "}
           {r.priority}
         </Text>
-        <MapView
-          style={{ height: 250, borderRadius: 8 }}
-          initialRegion={{
-            latitude: r.latitude,
-            longitude: r.longitude,
-            latitudeDelta: 0.008,
-            longitudeDelta: 0.008,
-          }}
-        >
-          <Marker
-            coordinate={{ latitude: r.latitude, longitude: r.longitude }}
-          />
-        </MapView>
-        {s.role !== "citizen" && (
-          <Button
-            secondary
-            title="Abrir navegación"
-            onPress={() => {
-              void Linking.openURL(
-                `https://www.google.com/maps/dir/?api=1&destination=${r.latitude},${r.longitude}`,
-              );
+        {Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY) ? (
+          <MapView
+            style={{ height: 250, borderRadius: 8 }}
+            initialRegion={{
+              latitude: r.latitude,
+              longitude: r.longitude,
+              latitudeDelta: 0.008,
+              longitudeDelta: 0.008,
             }}
-          />
+          >
+            <Marker
+              coordinate={{ latitude: r.latitude, longitude: r.longitude }}
+            />
+          </MapView>
+        ) : (
+          <View
+            style={{
+              padding: 12,
+              borderRadius: 8,
+              backgroundColor: "rgba(0, 210, 238, 0.06)",
+              borderColor: "rgba(0, 210, 238, 0.2)",
+              borderWidth: 1,
+              gap: 4,
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "600", color: "#00d2ee" }}>
+              📍 Ubicación de la incidencia:
+            </Text>
+            <Text style={{ fontSize: 12, color: "#cbd5e1" }}>
+              Coordenadas: {r.latitude.toFixed(6)}, {r.longitude.toFixed(6)}
+            </Text>
+          </View>
         )}
+        <Button
+          secondary
+          title="Ver ubicación en Google Maps"
+          onPress={() => {
+            void Linking.openURL(
+              `https://www.google.com/maps/search/?api=1&query=${r.latitude},${r.longitude}`,
+            );
+          }}
+        />
       </View>
       <View style={styles.card}>
         <Text style={styles.heading}>Fotografías</Text>

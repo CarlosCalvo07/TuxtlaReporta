@@ -1,6 +1,6 @@
 import { registerPush } from "./notifications";
 import { useRef, useState } from "react";
-import { Text, View, Image, Alert, Pressable } from "react-native";
+import { Text, View, Image, Alert, Pressable, Linking } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import * as ImagePicker from "expo-image-picker";
@@ -413,44 +413,139 @@ export default function Citizen() {
         </Text>
         <Button
           secondary
-          title="Usar mi ubicación"
+          title="📍 Obtener mi ubicación actual (GPS)"
           onPress={() => void gps()}
         />
-        <MapView
-          style={{ height: 300, borderRadius: 8 }}
-          initialRegion={{
-            latitude: 16.753,
-            longitude: -93.116,
-            latitudeDelta: 0.045,
-            longitudeDelta: 0.045,
-          }}
-          {...(point
-            ? {
-                region: {
-                  latitude: point.latitude,
-                  longitude: point.longitude,
-                  latitudeDelta: 0.025,
-                  longitudeDelta: 0.025,
-                },
-              }
-            : {})}
-          onPress={(e) => {
-            setPoint({ ...e.nativeEvent.coordinate, source: "manual_map" });
-          }}
-        >
-          {point && (
-            <Marker
-              coordinate={point}
-              draggable
-              onDragEnd={(e) => {
-                setPoint({
-                  ...e.nativeEvent.coordinate,
-                  source: "manual_map",
-                });
-              }}
-            />
-          )}
-        </MapView>
+
+        {Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY) ? (
+          <MapView
+            style={{ height: 300, borderRadius: 8 }}
+            initialRegion={{
+              latitude: 16.753,
+              longitude: -93.116,
+              latitudeDelta: 0.045,
+              longitudeDelta: 0.045,
+            }}
+            {...(point
+              ? {
+                  region: {
+                    latitude: point.latitude,
+                    longitude: point.longitude,
+                    latitudeDelta: 0.025,
+                    longitudeDelta: 0.025,
+                  },
+                }
+              : {})}
+            onPress={(e) => {
+              setPoint({ ...e.nativeEvent.coordinate, source: "manual_map" });
+            }}
+          >
+            {point && (
+              <Marker
+                coordinate={point}
+                draggable
+                onDragEnd={(e) => {
+                  setPoint({
+                    ...e.nativeEvent.coordinate,
+                    source: "manual_map",
+                  });
+                }}
+              />
+            )}
+          </MapView>
+        ) : (
+          <View
+            style={{
+              padding: 14,
+              borderRadius: 10,
+              backgroundColor: "rgba(0, 210, 238, 0.06)",
+              borderColor: "rgba(0, 210, 238, 0.2)",
+              borderWidth: 1,
+              gap: 10,
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "600", color: "#00d2ee" }}>
+              O selecciona una zona aproximada de Tuxtla:
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {[
+                { name: "Zona Centro", lat: 16.753, lon: -93.116 },
+                { name: "Terán", lat: 16.741, lon: -93.167 },
+                { name: "Las Palmas", lat: 16.762, lon: -93.09 },
+                { name: "Plan de Ayala", lat: 16.762, lon: -93.185 },
+                { name: "Patria Nueva", lat: 16.768, lon: -93.075 },
+                { name: "Diana Cazadora", lat: 16.752, lon: -93.079 },
+              ].map((zone) => (
+                <Pressable
+                  key={zone.name}
+                  accessibilityRole="button"
+                  accessibilityLabel={zone.name}
+                  onPress={() => {
+                    setPoint({
+                      latitude: zone.lat,
+                      longitude: zone.lon,
+                      source: "manual_map",
+                    });
+                    if (!neighborhood) setNeighborhood(zone.name);
+                  }}
+                  style={({ pressed }) => [
+                    {
+                      paddingVertical: 6,
+                      paddingHorizontal: 10,
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      backgroundColor:
+                        point?.latitude === zone.lat && point?.longitude === zone.lon
+                          ? "rgba(0, 210, 238, 0.25)"
+                          : "rgba(10, 20, 40, 0.6)",
+                      borderColor:
+                        point?.latitude === zone.lat && point?.longitude === zone.lon
+                          ? "#00d2ee"
+                          : "rgba(255, 255, 255, 0.15)",
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight:
+                        point?.latitude === zone.lat && point?.longitude === zone.lon
+                          ? "700"
+                          : "500",
+                      color:
+                        point?.latitude === zone.lat && point?.longitude === zone.lon
+                          ? "#00d2ee"
+                          : "#cbd5e1",
+                    }}
+                  >
+                    {zone.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            {point && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Ver ubicación en Google Maps"
+                onPress={() => {
+                  void Linking.openURL(
+                    `https://www.google.com/maps/search/?api=1&query=${point.latitude},${point.longitude}`,
+                  );
+                }}
+                style={{
+                  alignSelf: "flex-start",
+                  paddingVertical: 4,
+                  paddingHorizontal: 8,
+                }}
+              >
+                <Text style={{ fontSize: 12, color: "#60a5fa", textDecorationLine: "underline" }}>
+                  ↗ Ver coordenadas en la app de Google Maps
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
         {point ? (
           <View
             style={{
