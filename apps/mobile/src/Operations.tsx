@@ -15,10 +15,11 @@ import {
 } from "@tuxtla/types";
 import { api } from "./backend";
 import { useSession } from "./session";
-import { Screen, Button, Choices, Field, styles, BrandHeader } from "./ui";
+import { Screen, Button, Choices, Field, styles, BrandHeader, useTheme } from "./ui";
 export default function Operations() {
   const s = useSession(),
-    cache = useQueryClient();
+    cache = useQueryClient(),
+    { colors, mode } = useTheme();
   const [filters, setFilters] = useState<ReportFilters>({ page: 0 }),
     [message, setMessage] = useState("");
   const [sinceInput, setSinceInput] = useState(""),
@@ -78,8 +79,15 @@ export default function Operations() {
         }
       />
       {s.role === "admin" && (
-        <View style={styles.card}>
-          <Text style={styles.heading}>Telemetría Operativa</Text>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.heading, { color: colors.text }]}>
+            Telemetría Operativa
+          </Text>
           <View
             style={{
               flexDirection: "row",
@@ -94,26 +102,30 @@ export default function Operations() {
                 style={{
                   flex: 1,
                   minWidth: "45%",
-                  backgroundColor: "rgba(5, 12, 24, 0.8)",
+                  backgroundColor:
+                    mode === "dark"
+                      ? "rgba(5, 12, 24, 0.8)"
+                      : "#f8fafc",
                   borderRadius: 10,
                   padding: 12,
                   borderWidth: 1,
                   borderColor:
                     status === "solucionado"
-                      ? "rgba(5, 150, 105, 0.4)"
+                      ? "rgba(5, 150, 105, 0.45)"
                       : status === "en_atencion"
-                        ? "rgba(37, 99, 235, 0.4)"
+                        ? "rgba(37, 99, 235, 0.45)"
                         : status === "en_revision"
-                          ? "rgba(217, 119, 6, 0.4)"
-                          : "rgba(2, 132, 199, 0.4)",
+                          ? "rgba(217, 119, 6, 0.45)"
+                          : "rgba(2, 132, 199, 0.45)",
                 }}
               >
                 <Text
                   style={{
                     fontSize: 10.5,
-                    color: "#94a3b8",
+                    color: colors.textMuted,
                     textTransform: "uppercase",
-                    fontWeight: "600",
+                    fontWeight: "700",
+                    letterSpacing: 0.5,
                   }}
                 >
                   {statusLabels[status]}
@@ -126,10 +138,14 @@ export default function Operations() {
                       status === "solucionado"
                         ? "#10b981"
                         : status === "en_atencion"
-                          ? "#60a5fa"
+                          ? mode === "dark"
+                            ? "#60a5fa"
+                            : "#1d4ed8"
                           : status === "en_revision"
                             ? "#f59e0b"
-                            : "#38bdf8",
+                            : mode === "dark"
+                              ? "#38bdf8"
+                              : "#0284c7",
                     marginTop: 4,
                   }}
                 >
@@ -140,7 +156,12 @@ export default function Operations() {
           </View>
         </View>
       )}
-      <View style={styles.card}>
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
         <Choices
           label="Estado"
           options={[
@@ -208,7 +229,11 @@ export default function Operations() {
       {reports.error && (
         <Text style={styles.error}>{friendlyError(reports.error)}</Text>
       )}
-      {reports.isPending && <Text>Cargando reportes…</Text>}
+      {reports.isPending && (
+        <Text style={{ color: colors.textSecondary, textAlign: "center", marginVertical: 12 }}>
+          Cargando reportes…
+        </Text>
+      )}
       {reports.data?.rows.map((r) => (
         <Pressable
           accessibilityRole="button"
@@ -217,8 +242,11 @@ export default function Operations() {
             styles.card,
             {
               backgroundColor: pressed
-                ? "rgba(0, 210, 238, 0.12)"
-                : "rgba(10, 22, 44, 0.85)",
+                ? mode === "dark"
+                  ? "rgba(37, 99, 235, 0.15)"
+                  : "rgba(37, 99, 235, 0.08)"
+                : colors.card,
+              borderColor: colors.border,
               gap: 6,
             },
           ]}
@@ -235,7 +263,7 @@ export default function Operations() {
               style={{
                 fontSize: 14,
                 fontWeight: "800",
-                color: "#00d2ee",
+                color: mode === "dark" ? "#60a5fa" : "#1d4ed8",
                 letterSpacing: 0.5,
               }}
             >
@@ -245,20 +273,20 @@ export default function Operations() {
               style={{
                 backgroundColor:
                   r.status === "solucionado"
-                    ? "rgba(0, 230, 153, 0.15)"
+                    ? "rgba(5, 150, 105, 0.15)"
                     : r.status === "en_atencion"
-                      ? "rgba(59, 130, 246, 0.18)"
+                      ? "rgba(37, 99, 235, 0.18)"
                       : r.status === "en_revision"
-                        ? "rgba(255, 184, 0, 0.15)"
-                        : "rgba(0, 210, 238, 0.12)",
+                        ? "rgba(217, 119, 6, 0.15)"
+                        : "rgba(2, 132, 199, 0.12)",
                 borderColor:
                   r.status === "solucionado"
-                    ? "rgba(0, 230, 153, 0.4)"
+                    ? "rgba(5, 150, 105, 0.45)"
                     : r.status === "en_atencion"
-                      ? "rgba(59, 130, 246, 0.4)"
+                      ? "rgba(37, 99, 235, 0.45)"
                       : r.status === "en_revision"
-                        ? "rgba(255, 184, 0, 0.4)"
-                        : "rgba(0, 210, 238, 0.3)",
+                        ? "rgba(217, 119, 6, 0.45)"
+                        : "rgba(2, 132, 199, 0.4)",
                 borderWidth: 1,
                 paddingHorizontal: 8,
                 paddingVertical: 3,
@@ -272,28 +300,39 @@ export default function Operations() {
                   textTransform: "uppercase",
                   color:
                     r.status === "solucionado"
-                      ? "#00e699"
+                      ? "#10b981"
                       : r.status === "en_atencion"
-                        ? "#60a5fa"
+                        ? mode === "dark"
+                          ? "#60a5fa"
+                          : "#1d4ed8"
                         : r.status === "en_revision"
-                          ? "#ffb800"
-                          : "#00d2ee",
+                          ? "#f59e0b"
+                          : mode === "dark"
+                            ? "#38bdf8"
+                            : "#0284c7",
                 }}
               >
                 {statusLabels[r.status]} · {r.priority}
               </Text>
             </View>
           </View>
-          <Text style={[styles.heading, { fontSize: 15 }]}>
+          <Text style={[styles.heading, { fontSize: 15, color: colors.text }]}>
             {cats.data?.find((c) => c.id === r.category_id)?.name}
           </Text>
-          <Text numberOfLines={2} style={{ color: "#cbd5e1", fontSize: 13, lineHeight: 18 }}>
+          <Text numberOfLines={2} style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>
             {r.description}
           </Text>
           <Text style={styles.small}>
             {r.neighborhood || "Sin colonia especificada"} · {dateLabel(r.created_at)}
           </Text>
-          <Text style={{ color: "#00d2ee", fontWeight: "700", fontSize: 12, marginTop: 4 }}>
+          <Text
+            style={{
+              color: mode === "dark" ? "#60a5fa" : "#1d4ed8",
+              fontWeight: "700",
+              fontSize: 12,
+              marginTop: 4,
+            }}
+          >
             Abrir detalle →
           </Text>
         </Pressable>
@@ -318,11 +357,24 @@ export default function Operations() {
         />
       </View>
       {s.role === "admin" && (
-        <View style={styles.card}>
-          <Text style={styles.heading}>Carga por área y responsable</Text>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.heading, { color: colors.text }]}>
+            Carga por área y responsable
+          </Text>
           {workload.data?.map((w) => (
-            <Text key={`${w.user_id}:${w.area_id}`}>
-              {w.display_name} · {w.area_name}: {w.open_count}
+            <Text
+              key={`${w.user_id}:${w.area_id}`}
+              style={{ color: colors.textSecondary, fontSize: 13, marginVertical: 2 }}
+            >
+              {w.display_name} · {w.area_name}:{" "}
+              <Text style={{ fontWeight: "700", color: colors.text }}>
+                {w.open_count}
+              </Text>
             </Text>
           ))}
         </View>

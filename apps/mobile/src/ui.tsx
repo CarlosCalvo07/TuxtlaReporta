@@ -391,6 +391,45 @@ export function Screen({
   );
 }
 
+export function Card({
+  children,
+  style,
+}: {
+  children: ReactNode;
+  style?: any;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+export function Heading({
+  children,
+  style,
+}: {
+  children: ReactNode;
+  style?: any;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Text style={[styles.heading, { color: colors.text }, style]}>
+      {children}
+    </Text>
+  );
+}
+
 export function Button({
   title,
   onPress,

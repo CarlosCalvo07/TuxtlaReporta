@@ -21,7 +21,7 @@ import {
 } from "@tuxtla/types";
 import { api } from "../../src/backend";
 import { useSession } from "../../src/session";
-import { Screen, Button, Field, Choices, styles, useTheme } from "../../src/ui";
+import { Screen, Button, Field, Choices, styles, useTheme, Card, Heading } from "../../src/ui";
 function Photo({ path }: { path: string }) {
   const q = useQuery({
     queryKey: ["photo", path],
@@ -203,10 +203,10 @@ export default function Detail() {
       </View>
 
       {/* Tarjeta de Información General */}
-      <View style={styles.card}>
-        <Text style={styles.heading}>
+      <Card>
+        <Heading>
           {categories.data?.find((c) => c.id === r.category_id)?.name || "Incidencia Urbana"}
-        </Text>
+        </Heading>
         <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 21 }}>
           {r.description}
         </Text>
@@ -342,11 +342,11 @@ export default function Detail() {
             );
           }}
         />
-      </View>
+      </Card>
 
       {/* Evidencia Inicial (Ciudadano) */}
-      <View style={styles.card}>
-        <Text style={styles.heading}>📸 Evidencia Inicial del Reporte</Text>
+      <Card>
+        <Heading>📸 Evidencia Inicial del Reporte</Heading>
         <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
           Fotografías capturadas por la ciudadanía al registrar la solicitud:
         </Text>
@@ -362,11 +362,11 @@ export default function Detail() {
             No se adjuntó fotografía en el reporte original.
           </Text>
         )}
-      </View>
+      </Card>
 
       {/* Evidencia de Resolución (Personal Municipal) */}
-      <View style={styles.card}>
-        <Text style={styles.heading}>✅ Evidencia de Trabajo Concluido</Text>
+      <Card>
+        <Heading>✅ Evidencia de Trabajo Concluido</Heading>
         <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
           Fotografía de verificación obligatoria del trabajo realizado en campo:
         </Text>
@@ -403,12 +403,12 @@ export default function Detail() {
             </Text>
           </View>
         )}
-      </View>
+      </Card>
 
       {/* Panel de Atención Operativa para Personal y Responsables */}
       {s.role !== "citizen" && r.status !== "solucionado" && (
-        <View style={styles.card}>
-          <Text style={styles.heading}>🛠️ Panel de Atención Operativa</Text>
+        <Card>
+          <Heading>🛠️ Panel de Atención Operativa</Heading>
           <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>
             Registre el seguimiento técnico y la evidencia de resolución.
           </Text>
@@ -549,14 +549,14 @@ export default function Detail() {
               </Text>
             </Pressable>
           )}
-        </View>
+        </Card>
       )}
 
       {/* Gestión de Asignación y Clasificación (Administradores) */}
       {s.role === "admin" && (
         <>
           {/* Tarjeta de Responsable de Atención */}
-          <View style={styles.card}>
+          <Card>
             <View
               style={{
                 flexDirection: "row",
@@ -565,7 +565,7 @@ export default function Detail() {
                 marginBottom: 6,
               }}
             >
-              <Text style={styles.heading}>Responsable de Atención</Text>
+              <Heading>Responsable de Atención</Heading>
               {activeAssignment && (
                 <Pressable
                   onPress={() => setIsEditingAssignee(!isEditingAssignee)}
@@ -631,10 +631,10 @@ export default function Detail() {
                 Selecciona una categoría con área de servicio responsable.
               </Text>
             )}
-          </View>
+          </Card>
 
           {/* Tarjeta de Clasificación */}
-          <View style={styles.card}>
+          <Card>
             <View
               style={{
                 flexDirection: "row",
@@ -643,7 +643,7 @@ export default function Detail() {
                 marginBottom: 6,
               }}
             >
-              <Text style={styles.heading}>Clasificación Oficial</Text>
+              <Heading>Clasificación Oficial</Heading>
               <Pressable
                 onPress={() => setIsEditingClassification(!isEditingClassification)}
                 style={{
@@ -710,7 +710,7 @@ export default function Detail() {
                 </Text>
               </View>
             )}
-          </View>
+          </Card>
         </>
       )}
 
@@ -719,8 +719,8 @@ export default function Detail() {
       )}
 
       {/* Historial Oficial de Cambios */}
-      <View style={styles.card}>
-        <Text style={styles.heading}>Historial de Movimientos</Text>
+      <Card>
+        <Heading>Historial de Movimientos</Heading>
         {q.data?.history.map((h) => (
           <View
             key={h.id}
@@ -741,12 +741,12 @@ export default function Detail() {
             )}
           </View>
         ))}
-      </View>
+      </Card>
 
       {/* Bitácora de Notas */}
       {!!q.data?.notes.length && (
-        <View style={styles.card}>
-          <Text style={styles.heading}>Bitácora de Notas Internas</Text>
+        <Card>
+          <Heading>Bitácora de Notas Internas</Heading>
           {q.data.notes.map((n) => (
             <View
               key={n.id}
@@ -759,7 +759,7 @@ export default function Detail() {
               <Text style={{ fontSize: 13, color: colors.text }}>{n.note}</Text>
             </View>
           ))}
-        </View>
+        </Card>
       )}
     </Screen>
   );
