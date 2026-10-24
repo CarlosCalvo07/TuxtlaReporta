@@ -327,7 +327,7 @@ function Workspace() {
             ☰
           </button>
           <div className="topbar-tag">
-            <span className="pulse-dot"></span> CENTRO DE COMANDO URBANO · TUXTLA
+            <span className="pulse-dot"></span> GOBIERNO MUNICIPAL · CENTRO DE MANDO Y ATENCIÓN
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <button

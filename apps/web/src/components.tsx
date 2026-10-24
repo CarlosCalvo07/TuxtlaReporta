@@ -90,15 +90,15 @@ export function Map({
     for (const report of reports) {
       const label = document.createElement("span");
       label.textContent = report.folio;
-      label.style.fontFamily = "Space Grotesk, monospace";
+      label.style.fontFamily = "system-ui, -apple-system, sans-serif";
       label.style.fontWeight = "700";
       label.style.fontSize = "11px";
       L.circleMarker([report.latitude, report.longitude], {
-        radius: 8,
-        color: "#ff3366",
-        fillColor: "#00d2ee",
-        fillOpacity: 0.9,
-        weight: 2.5,
+        radius: 7,
+        color: "#1e3a8a",
+        fillColor: "#2563eb",
+        fillOpacity: 0.95,
+        weight: 2,
       })
         .bindTooltip(label)
         .addTo(layer.current!);

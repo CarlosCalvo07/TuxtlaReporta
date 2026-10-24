@@ -100,12 +100,12 @@ export default function Operations() {
                   borderWidth: 1,
                   borderColor:
                     status === "solucionado"
-                      ? "rgba(0, 230, 153, 0.3)"
+                      ? "rgba(5, 150, 105, 0.4)"
                       : status === "en_atencion"
-                        ? "rgba(59, 130, 246, 0.3)"
+                        ? "rgba(37, 99, 235, 0.4)"
                         : status === "en_revision"
-                          ? "rgba(255, 184, 0, 0.3)"
-                          : "rgba(0, 210, 238, 0.3)",
+                          ? "rgba(217, 119, 6, 0.4)"
+                          : "rgba(2, 132, 199, 0.4)",
                 }}
               >
                 <Text
@@ -124,12 +124,12 @@ export default function Operations() {
                     fontWeight: "800",
                     color:
                       status === "solucionado"
-                        ? "#00e699"
+                        ? "#10b981"
                         : status === "en_atencion"
                           ? "#60a5fa"
                           : status === "en_revision"
-                            ? "#ffb800"
-                            : "#00d2ee",
+                            ? "#f59e0b"
+                            : "#38bdf8",
                     marginTop: 4,
                   }}
                 >
