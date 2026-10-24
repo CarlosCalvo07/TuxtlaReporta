@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
-import { Text, View, Image, Alert, Linking } from "react-native";
+import { Text, View, Image, Alert, Linking, Platform } from "react-native";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useLocalSearchParams, Redirect } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import MapView, { Marker } from "react-native-maps";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { dateLabel, friendlyError, nextReportStatus } from "@tuxtla/shared";
+
+const isMapAvailable =
+  Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY) ||
+  Platform.OS === "ios" ||
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
+  __DEV__;
 import {
   statusLabels,
   priorities,
@@ -187,7 +194,7 @@ export default function Detail() {
           {r.neighborhood || "Sin colonia especificada"} · Prioridad{" "}
           {r.priority}
         </Text>
-        {Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY) ? (
+        {isMapAvailable ? (
           <MapView
             style={{ height: 250, borderRadius: 8 }}
             initialRegion={{

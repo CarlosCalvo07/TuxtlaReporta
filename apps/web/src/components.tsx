@@ -40,16 +40,23 @@ export function Map({
     const updateTiles = () => {
       const isLight =
         document.documentElement.getAttribute("data-theme") === "light";
-      const url = isLight
-        ? "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-        : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+      const cartoKey = import.meta.env.VITE_CARTO_API_KEY;
+
+      const url = cartoKey
+        ? isLight
+          ? `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=${cartoKey}`
+          : `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=${cartoKey}`
+        : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+      const attribution = cartoKey
+        ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+        : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
       if (currentTiles) instance.removeLayer(currentTiles);
       currentTiles = L.tileLayer(url, {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        attribution,
         maxZoom: 19,
-        subdomains: "abcd",
+        subdomains: cartoKey ? "abcd" : "abc",
       }).addTo(instance);
     };
 
