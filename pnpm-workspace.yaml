@@ -2,15 +2,12 @@ packages:
   - apps/*
   - packages/*
 allowBuilds:
-  '@parcel/watcher': set this to true or false
-  unrs-resolver: set this to true or false
+  '@parcel/watcher': true
+  unrs-resolver: true
 onlyBuiltDependencies:
   - esbuild
   - supabase
 overrides:
-  react-native: 0.86.3
-  react-native-reanimated: 4.5.1
-  react-native-worklets: 0.10.1
-  "@react-native/metro-config": 0.86.3
-  react: 19.2.3
-  react-dom: 19.2.3
+  react-native: 0.88.0
+  react-native-worklets: 0.13.0
+  "@react-native/metro-config": 0.88.0
