@@ -39,7 +39,8 @@
           "cameraPermission": "Toma fotografías de la incidencia y su solución."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": false

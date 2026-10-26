@@ -362,9 +362,11 @@ export function BrandHeader({
 export function Screen({
   children,
   safeTop = true,
+  contentStyle,
 }: {
   children: ReactNode;
   safeTop?: boolean;
+  contentStyle?: any;
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -383,6 +385,7 @@ export function Screen({
           paddingLeft: Math.max(insets.left, 20),
           paddingRight: Math.max(insets.right, 20),
         },
+        contentStyle,
       ]}
       keyboardShouldPersistTaps="handled"
     >

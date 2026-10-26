@@ -27,6 +27,9 @@ jest.mock("../src/Operations", () => {
   const { Text } = require("react-native");
   return () => React.createElement(Text, null, "OPERACIONES");
 });
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
 afterEach(cleanup);
 beforeEach(() => {
   mockLoading = false;
