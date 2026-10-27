@@ -556,7 +556,106 @@ export default function Citizen() {
                   />
                 )}
               </MapView>
-            ) : null}
+            ) : (
+              <View
+                style={{
+                  padding: 14,
+                  borderRadius: 10,
+                  backgroundColor:
+                    mode === "dark"
+                      ? "rgba(0, 210, 238, 0.06)"
+                      : "rgba(37, 99, 235, 0.04)",
+                  borderColor:
+                    mode === "dark"
+                      ? "rgba(0, 210, 238, 0.2)"
+                      : "rgba(37, 99, 235, 0.2)",
+                  borderWidth: 1,
+                  gap: 10,
+                  marginVertical: 8,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "600",
+                    color: mode === "dark" ? "#00d2ee" : "#2563eb",
+                  }}
+                >
+                  O selecciona una zona aproximada de Tuxtla:
+                </Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                  {[
+                    { name: "Zona Centro", lat: 16.753, lon: -93.116 },
+                    { name: "Terán", lat: 16.741, lon: -93.167 },
+                    { name: "Las Palmas", lat: 16.762, lon: -93.09 },
+                    { name: "Plan de Ayala", lat: 16.762, lon: -93.185 },
+                    { name: "Patria Nueva", lat: 16.768, lon: -93.075 },
+                    { name: "Diana Cazadora", lat: 16.752, lon: -93.079 },
+                  ].map((zone) => (
+                    <Pressable
+                      key={zone.name}
+                      accessibilityRole="button"
+                      accessibilityLabel={zone.name}
+                      onPress={() => {
+                        setPoint({
+                          latitude: zone.lat,
+                          longitude: zone.lon,
+                          source: "manual_map",
+                        });
+                        if (!neighborhood) setNeighborhood(zone.name);
+                      }}
+                      style={({ pressed }) => [
+                        {
+                          paddingVertical: 6,
+                          paddingHorizontal: 10,
+                          borderRadius: 16,
+                          borderWidth: 1,
+                          backgroundColor:
+                            point?.latitude === zone.lat &&
+                            point?.longitude === zone.lon
+                              ? mode === "dark"
+                                ? "rgba(0, 210, 238, 0.25)"
+                                : "rgba(37, 99, 235, 0.2)"
+                              : mode === "dark"
+                                ? "rgba(10, 20, 40, 0.6)"
+                                : "rgba(240, 243, 246, 0.9)",
+                          borderColor:
+                            point?.latitude === zone.lat &&
+                            point?.longitude === zone.lon
+                              ? mode === "dark"
+                                ? "#00d2ee"
+                                : "#2563eb"
+                              : mode === "dark"
+                                ? "rgba(255, 255, 255, 0.15)"
+                                : "rgba(0, 0, 0, 0.15)",
+                          opacity: pressed ? 0.7 : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight:
+                            point?.latitude === zone.lat &&
+                            point?.longitude === zone.lon
+                              ? "700"
+                              : "500",
+                          color:
+                            point?.latitude === zone.lat &&
+                            point?.longitude === zone.lon
+                              ? mode === "dark"
+                                ? "#00d2ee"
+                                : "#2563eb"
+                              : colors.text,
+                        }}
+                      >
+                        {zone.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
 
             {point ? (
               <View

@@ -40,7 +40,11 @@ export function Map({
     const updateTiles = () => {
       const isLight =
         document.documentElement.getAttribute("data-theme") === "light";
-      const cartoKey = import.meta.env.VITE_CARTO_API_KEY;
+      const rawKey = import.meta.env.VITE_CARTO_API_KEY;
+      const cartoKey =
+        typeof rawKey === "string" && rawKey.trim().length > 10
+          ? rawKey.trim()
+          : null;
 
       const url = cartoKey
         ? isLight
