@@ -4,9 +4,10 @@ import { WebView } from "react-native-webview";
 
 interface OpenStreetMapProps {
   point: { latitude: number; longitude: number } | null;
-  onSelectPoint: (coords: { latitude: number; longitude: number }) => void;
+  onSelectPoint?: (coords: { latitude: number; longitude: number }) => void;
   height?: number;
   isDark?: boolean;
+  interactive?: boolean;
 }
 
 export function OpenStreetMap({
@@ -14,6 +15,7 @@ export function OpenStreetMap({
   onSelectPoint,
   height = 280,
   isDark = true,
+  interactive = Boolean(onSelectPoint),
 }: OpenStreetMapProps) {
   const webViewRef = useRef<any>(null);
   const initialLat = point?.latitude ?? 16.753;
@@ -75,19 +77,22 @@ export function OpenStreetMap({
     }).addTo(map);
 
     var marker = null;
+    var isInteractive = ${interactive ? "true" : "false"};
 
     function setMarker(lat, lng, pan) {
       if (!marker) {
-        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-        marker.on('dragend', function() {
-          var pos = marker.getLatLng();
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              latitude: pos.lat,
-              longitude: pos.lng
-            }));
-          }
-        });
+        marker = L.marker([lat, lng], { draggable: isInteractive }).addTo(map);
+        if (isInteractive) {
+          marker.on('dragend', function() {
+            var pos = marker.getLatLng();
+            if (window.ReactNativeWebView) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                latitude: pos.lat,
+                longitude: pos.lng
+              }));
+            }
+          });
+        }
       } else {
         marker.setLatLng([lat, lng]);
       }
@@ -98,15 +103,17 @@ export function OpenStreetMap({
 
     ${hasPoint ? `setMarker(${initialLat}, ${initialLng}, false);` : ""}
 
-    map.on('click', function(e) {
-      setMarker(e.latlng.lat, e.latlng.lng, false);
-      if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          latitude: e.latlng.lat,
-          longitude: e.latlng.lng
-        }));
-      }
-    });
+    if (isInteractive) {
+      map.on('click', function(e) {
+        setMarker(e.latlng.lat, e.latlng.lng, false);
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            latitude: e.latlng.lat,
+            longitude: e.latlng.lng
+          }));
+        }
+      });
+    }
   </script>
 </body>
 </html>
@@ -131,6 +138,7 @@ export function OpenStreetMap({
         startInLoadingState
         onMessage={(event: any) => {
           try {
+            if (!onSelectPoint) return;
             const data = JSON.parse(event.nativeEvent.data);
             if (
               typeof data.latitude === "number" &&

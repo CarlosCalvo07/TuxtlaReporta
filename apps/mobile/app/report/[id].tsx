@@ -4,6 +4,7 @@ import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useLocalSearchParams, Redirect } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import MapView, { Marker } from "react-native-maps";
+import { OpenStreetMap } from "../../src/OpenStreetMap";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { dateLabel, friendlyError, nextReportStatus } from "@tuxtla/shared";
@@ -287,7 +288,14 @@ export default function Detail() {
         )}
 
         {/* Mapa o Coordenadas */}
-        {isMapAvailable ? (
+        {Platform.OS === "android" ? (
+          <OpenStreetMap
+            point={{ latitude: r.latitude, longitude: r.longitude }}
+            isDark={mode === "dark"}
+            height={230}
+            interactive={false}
+          />
+        ) : isMapAvailable ? (
           <MapView
             style={{ height: 230, borderRadius: 8, marginTop: 8 }}
             initialRegion={{
