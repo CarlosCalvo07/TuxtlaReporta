@@ -12,3 +12,6 @@ supabase/.branches/
 *.log
 .pnpm-store/
 tmp/
+
+.vercel
+.env*
