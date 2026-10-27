@@ -18,6 +18,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as Crypto from "expo-crypto";
 import MapView, { Marker } from "react-native-maps";
+import { OpenStreetMap } from "./OpenStreetMap";
 import { router } from "expo-router";
 import { friendlyError, dateLabel } from "@tuxtla/shared";
 import { statusLabels } from "@tuxtla/types";
@@ -520,7 +521,15 @@ export default function Citizen() {
               onPress={() => void gps()}
             />
 
-            {isMapAvailable ? (
+            {Platform.OS === "android" ? (
+              <OpenStreetMap
+                point={point}
+                isDark={mode === "dark"}
+                onSelectPoint={(coords) => {
+                  setPoint({ ...coords, source: "manual_map" });
+                }}
+              />
+            ) : isMapAvailable ? (
               <MapView
                 style={{ height: 280, borderRadius: 10, marginVertical: 8 }}
                 initialRegion={{
