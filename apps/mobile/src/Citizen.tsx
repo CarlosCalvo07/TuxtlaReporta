@@ -437,7 +437,7 @@ export default function Citizen() {
               </Text>
             </View>
             <Field
-              label="Colonia o zona (opcional)"
+              label="Colonia o zona"
               value={neighborhood}
               onChangeText={setNeighborhood}
               maxLength={150}
