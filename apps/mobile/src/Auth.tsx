@@ -201,7 +201,7 @@ export default function Auth() {
                     secondary
                     title={
                       field.value
-                        ? "✓ Acepto el aviso de privacidad"
+                        ? "Aviso de privacidad aceptado"
                         : "Aceptar el aviso de privacidad"
                     }
                     onPress={() => {

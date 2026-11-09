@@ -93,7 +93,7 @@ export default function Reports() {
             className="secondary"
             onClick={() => setShowHeatmap((v) => !v)}
           >
-            {showHeatmap ? "▤ Ocultar mapa de calor" : "🔥 Ver mapa de calor"}
+            {showHeatmap ? "Ocultar mapa de calor" : "Ver mapa de calor"}
           </button>
           <span className="chip">{reports.data?.count ?? "—"} reportes</span>
         </div>
@@ -178,7 +178,7 @@ export default function Reports() {
               onChange={(e) => setGroupDuplicates(e.target.checked)}
             />
             <span>
-              <strong>🔥 Agrupar incidencias repetidas del mismo tipo</strong> (rango corto ≤{" "}
+              <strong>Agrupar incidencias repetidas del mismo tipo</strong> (rango corto ≤{" "}
               {DEFAULT_CLUSTER_RADIUS_M} m)
             </span>
           </label>
@@ -301,7 +301,7 @@ export default function Reports() {
                           <div className="grouped-folios-list">
                             {extraReports.map((dup) => (
                               <Link key={dup.id} to={`/reports/${dup.id}`}>
-                                {dup.folio} ({dup.citizen_name || "Ciudadano"}) ↗
+                                {dup.folio} ({dup.citizen_name || "Ciudadano"})
                               </Link>
                             ))}
                           </div>
@@ -339,7 +339,7 @@ export default function Reports() {
                       </span>
                     </td>
                     <td>
-                      <Link to={`/reports/${r.id}`}>Ver detalle ↗</Link>
+                      <Link to={`/reports/${r.id}`}>Ver detalle</Link>
                     </td>
                   </tr>
                 );

@@ -335,7 +335,6 @@ export default function Citizen() {
                 },
               ]}
             >
-              <Text style={{ fontSize: 32, marginBottom: 4 }}>✨</Text>
               <Text
                 style={{
                   fontSize: 18,
@@ -440,7 +439,7 @@ export default function Citizen() {
                     }}
                   />
                   <Text style={{ fontSize: 12, color: colors.text, flex: 1, lineHeight: 17 }}>
-                    🔥 <Text style={{ fontWeight: "700" }}>{selectedCat?.name ?? catStyle.label}:</Text>{" "}
+                    <Text style={{ fontWeight: "700" }}>{selectedCat?.name ?? catStyle.label}:</Text>{" "}
                     Recibirás tu propio folio oficial. Si otros vecinos reportan esta misma incidencia en un rango corto (≤{DEFAULT_CLUSTER_RADIUS_M}m), se agruparán automáticamente en el mapa de calor municipal para aumentar su prioridad.
                   </Text>
                 </View>
@@ -470,7 +469,7 @@ export default function Citizen() {
                 ]}
               >
                 {description.trim().length}/20 caracteres mínimos{" "}
-                {description.trim().length >= 20 ? "✓" : ""}
+                {description.trim().length >= 20 ? "(cumplido)" : ""}
               </Text>
             </View>
             <Field
@@ -521,7 +520,7 @@ export default function Citizen() {
                           fontWeight: "bold",
                         }}
                       >
-                        ✕
+                        ×
                       </Text>
                     </Pressable>
                   </View>
@@ -529,7 +528,7 @@ export default function Citizen() {
               </View>
             ) : (
               <Text style={{ color: "#ffb800", fontSize: 13 }}>
-                ⚠️ Debes agregar al menos 1 fotografía de evidencia.
+                Debes agregar al menos 1 fotografía de evidencia.
               </Text>
             )}
             <Button
@@ -553,7 +552,7 @@ export default function Citizen() {
             </Text>
             <Button
               secondary
-              title="📍 Usar mi ubicación actual (GPS)"
+              title="Usar mi ubicación actual (GPS)"
               onPress={() => void gps()}
             />
 
@@ -716,7 +715,7 @@ export default function Citizen() {
                 <Text
                   style={{ fontSize: 13, fontWeight: "700", color: "#00e699" }}
                 >
-                  ✓ Ubicación establecida
+                  Ubicación establecida
                 </Text>
                 <Text style={styles.small}>
                   {point.latitude.toFixed(6)}, {point.longitude.toFixed(6)} ·{" "}
@@ -736,13 +735,13 @@ export default function Citizen() {
                   style={{ marginTop: 4 }}
                 >
                   <Text style={{ fontSize: 12, color: "#60a5fa", textDecorationLine: "underline" }}>
-                    ↗ Abrir en Google Maps
+                    Abrir en Google Maps
                   </Text>
                 </Pressable>
               </View>
             ) : (
               <Text style={{ color: "#ffb800", fontSize: 13 }}>
-                ⚠️ Toca el mapa o pulsa "Usar mi ubicación actual" para fijar las coordenadas.
+                Toca el mapa o pulsa "Usar mi ubicación actual" para fijar las coordenadas.
               </Text>
             )}
           </View>
@@ -777,7 +776,7 @@ export default function Citizen() {
                   color: category ? "#00e699" : "#ffb800",
                 }}
               >
-                {category ? "✓" : "•"} Seleccionar tipo de incidencia
+                {category ? "[Cumplido]" : "•"} Seleccionar tipo de incidencia
               </Text>
               <Text
                 style={{
@@ -786,7 +785,7 @@ export default function Citizen() {
                     description.trim().length >= 20 ? "#00e699" : "#ffb800",
                 }}
               >
-                {description.trim().length >= 20 ? "✓" : "•"} Descripción mínima (
+                {description.trim().length >= 20 ? "[Cumplido]" : "•"} Descripción mínima (
                 {description.trim().length}/20 caracteres)
               </Text>
               <Text
@@ -795,7 +794,7 @@ export default function Citizen() {
                   color: photos.length > 0 ? "#00e699" : "#ffb800",
                 }}
               >
-                {photos.length > 0 ? "✓" : "•"} Al menos 1 fotografía ({photos.length}/5)
+                {photos.length > 0 ? "[Cumplido]" : "•"} Al menos 1 fotografía ({photos.length}/5)
               </Text>
               <Text
                 style={{
@@ -803,7 +802,7 @@ export default function Citizen() {
                   color: point ? "#00e699" : "#ffb800",
                 }}
               >
-                {point ? "✓" : "•"} Ubicación marcada en el mapa
+                {point ? "[Cumplido]" : "•"} Ubicación marcada en el mapa
               </Text>
             </View>
           )}
@@ -854,7 +853,7 @@ export default function Citizen() {
                 }}
               >
                 <Text style={{ fontSize: 12, fontWeight: "600", color: "#00d2ee" }}>
-                  🔄 Actualizar
+                  Actualizar
                 </Text>
               </Pressable>
             </View>
@@ -901,7 +900,6 @@ export default function Citizen() {
                 },
               ]}
             >
-              <Text style={{ fontSize: 44 }}>📋</Text>
               <Text
                 style={{
                   fontSize: 18,
@@ -924,7 +922,7 @@ export default function Citizen() {
               </Text>
               <View style={{ marginTop: 8, width: "100%" }}>
                 <Button
-                  title="📝 Crear mi primer reporte"
+                  title="Crear mi primer reporte"
                   onPress={() => setActiveTab("report")}
                 />
               </View>
@@ -1074,8 +1072,8 @@ export default function Citizen() {
                     }}
                   >
                     <Text style={{ fontSize: 11.5, color: colors.textMuted }}>
-                      📅 {dateLabel(rep.created_at)}
-                      {rep.neighborhood ? ` · 📍 ${rep.neighborhood}` : ""}
+                      {dateLabel(rep.created_at)}
+                      {rep.neighborhood ? ` · ${rep.neighborhood}` : ""}
                     </Text>
                     <Text
                       style={{
@@ -1118,7 +1116,9 @@ export default function Citizen() {
                 marginBottom: 12,
               }}
             >
-              <Text style={{ fontSize: 32 }}>👤</Text>
+              <Text style={{ fontSize: 26, fontWeight: "800", color: "#00d2ee" }}>
+                {(userProfile.data?.email ?? "C").slice(0, 1).toUpperCase()}
+              </Text>
             </View>
 
             <Text
@@ -1229,7 +1229,7 @@ export default function Citizen() {
 
           {/* Notificaciones */}
           <View style={styles.card}>
-            <Text style={styles.heading}>🔔 Notificaciones de seguimiento</Text>
+            <Text style={styles.heading}>Notificaciones de seguimiento</Text>
             <Text style={styles.small}>
               Recibe avisos en tu teléfono cada vez que una cuadrilla atienda o solucione una de tus incidencias.
             </Text>
@@ -1262,7 +1262,7 @@ export default function Citizen() {
 
           {/* Información institucional */}
           <View style={styles.card}>
-            <Text style={styles.heading}>🏛️ H. Ayuntamiento de Tuxtla Gutiérrez</Text>
+            <Text style={styles.heading}>H. Ayuntamiento de Tuxtla Gutiérrez</Text>
             <Text style={styles.small}>
               Atención Ciudadana Oficial y Servicios Públicos Municipales.
             </Text>
@@ -1276,7 +1276,7 @@ export default function Citizen() {
                 }}
               >
                 <Text style={{ fontSize: 13, color: colors.text }}>
-                  📞 Línea de atención ciudadana:
+                  Línea de atención ciudadana:
                 </Text>
                 <Text style={{ fontSize: 13, fontWeight: "700", color: "#60a5fa" }}>
                   072
@@ -1293,7 +1293,7 @@ export default function Citizen() {
                 }}
               >
                 <Text style={{ fontSize: 13, color: colors.text }}>
-                  🌐 Portal municipal:
+                  Portal municipal:
                 </Text>
                 <Text style={{ fontSize: 13, fontWeight: "700", color: "#60a5fa" }}>
                   tuxtla.gob.mx
@@ -1337,7 +1337,7 @@ export default function Citizen() {
                   letterSpacing: 0.3,
                 }}
               >
-                🚪 Cerrar sesión
+                Cerrar sesión
               </Text>
             </Pressable>
           </View>
@@ -1373,7 +1373,7 @@ export default function Citizen() {
           style={{
             flex: 1,
             alignItems: "center",
-            paddingVertical: 6,
+            paddingVertical: 8,
             borderRadius: 10,
             backgroundColor:
               activeTab === "report"
@@ -1381,13 +1381,20 @@ export default function Citizen() {
                 : "transparent",
           }}
         >
-          <Text style={{ fontSize: 20 }}>📝</Text>
+          <View
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: activeTab === "report" ? "#00d2ee" : "transparent",
+              marginBottom: 4,
+            }}
+          />
           <Text
             style={{
-              fontSize: 11.5,
+              fontSize: 12.5,
               fontWeight: activeTab === "report" ? "800" : "500",
               color: activeTab === "report" ? "#00d2ee" : colors.textMuted,
-              marginTop: 2,
             }}
           >
             Reportar
@@ -1402,7 +1409,7 @@ export default function Citizen() {
           style={{
             flex: 1,
             alignItems: "center",
-            paddingVertical: 6,
+            paddingVertical: 8,
             borderRadius: 10,
             position: "relative",
             backgroundColor:
@@ -1411,43 +1418,49 @@ export default function Citizen() {
                 : "transparent",
           }}
         >
-          <Text style={{ fontSize: 20 }}>📋</Text>
-          {reportsCount > 0 && (
-            <View
+          <View
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: activeTab === "my_reports" ? "#00d2ee" : "transparent",
+              marginBottom: 4,
+            }}
+          />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text
               style={{
-                position: "absolute",
-                top: 2,
-                right: "26%",
-                backgroundColor: "#2563eb",
-                borderRadius: 10,
-                minWidth: 18,
-                height: 18,
-                alignItems: "center",
-                justifyContent: "center",
-                paddingHorizontal: 4,
+                fontSize: 12.5,
+                fontWeight: activeTab === "my_reports" ? "800" : "500",
+                color: activeTab === "my_reports" ? "#00d2ee" : colors.textMuted,
               }}
             >
-              <Text
+              Mis reportes
+            </Text>
+            {reportsCount > 0 && (
+              <View
                 style={{
-                  color: "#ffffff",
-                  fontSize: 10,
-                  fontWeight: "bold",
+                  backgroundColor: "#2563eb",
+                  borderRadius: 10,
+                  minWidth: 18,
+                  height: 18,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingHorizontal: 5,
                 }}
               >
-                {reportsCount > 99 ? "99+" : reportsCount}
-              </Text>
-            </View>
-          )}
-          <Text
-            style={{
-              fontSize: 11.5,
-              fontWeight: activeTab === "my_reports" ? "800" : "500",
-              color: activeTab === "my_reports" ? "#00d2ee" : colors.textMuted,
-              marginTop: 2,
-            }}
-          >
-            Mis reportes
-          </Text>
+                <Text
+                  style={{
+                    color: "#ffffff",
+                    fontSize: 10,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {reportsCount > 99 ? "99+" : reportsCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </Pressable>
 
         {/* Tab 3: Mi Perfil */}
@@ -1458,7 +1471,7 @@ export default function Citizen() {
           style={{
             flex: 1,
             alignItems: "center",
-            paddingVertical: 6,
+            paddingVertical: 8,
             borderRadius: 10,
             backgroundColor:
               activeTab === "profile"
@@ -1466,13 +1479,20 @@ export default function Citizen() {
                 : "transparent",
           }}
         >
-          <Text style={{ fontSize: 20 }}>👤</Text>
+          <View
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: activeTab === "profile" ? "#00d2ee" : "transparent",
+              marginBottom: 4,
+            }}
+          />
           <Text
             style={{
-              fontSize: 11.5,
+              fontSize: 12.5,
               fontWeight: activeTab === "profile" ? "800" : "500",
               color: activeTab === "profile" ? "#00d2ee" : colors.textMuted,
-              marginTop: 2,
             }}
           >
             Mi perfil

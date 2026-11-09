@@ -50,6 +50,7 @@ function Login() {
   const { theme, toggle: toggleTheme } = useTheme();
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
+    [showPassword, setShowPassword] = useState(false),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   return (
@@ -75,7 +76,7 @@ function Login() {
             onClick={toggleTheme}
             title="Cambiar tema"
           >
-            {theme === "dark" ? "☀️ Claro" : "🌙 Oscuro"}
+            {theme === "dark" ? "Modo claro" : "Modo oscuro"}
           </button>
         </div>
         <div>
@@ -90,9 +91,7 @@ function Login() {
             el primer aviso hasta el trabajo terminado.
           </p>
         </div>
-        <span>
-          Chiapas, México <span aria-hidden="true">↗</span>
-        </span>
+        <span>Chiapas, México</span>
       </section>
       <section className="login-form">
         <p className="eyebrow">ESPACIO DE TRABAJO</p>
@@ -126,13 +125,24 @@ function Login() {
           </label>
           <label>
             Contraseña
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="secondary"
+                style={{ padding: "10px 14px", whiteSpace: "nowrap" }}
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? "Ocultar" : "Mostrar"}
+              </button>
+            </div>
           </label>
           {(message || session.message) && (
             <p role="alert" className="notice">
@@ -170,6 +180,7 @@ function Login() {
 }
 function Recovery() {
   const [password, setPassword] = useState(""),
+    [showPassword, setShowPassword] = useState(false),
     [message, setMessage] = useState("");
   return (
     <main className="recovery panel">
@@ -187,16 +198,44 @@ function Recovery() {
       >
         <label>
           Nueva contraseña
-          <input
-            type="password"
-            minLength={12}
-            maxLength={128}
-            autoComplete="new-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type={showPassword ? "text" : "password"}
+              minLength={12}
+              maxLength={128}
+              autoComplete="new-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button
+              type="button"
+              className="secondary"
+              style={{ padding: "10px 14px", whiteSpace: "nowrap" }}
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? "Ocultar" : "Mostrar"}
+            </button>
+          </div>
         </label>
+        <p
+          className="small"
+          style={{
+            margin: "4px 0 8px 0",
+            color:
+              password.length >= 12
+                ? "var(--neon-emerald, #10b981)"
+                : "var(--text-secondary)",
+            fontWeight: 600,
+          }}
+        >
+          {password.length === 0
+            ? "Requisito: mínimo 12 caracteres"
+            : password.length >= 12
+              ? `Contraseña válida (${password.length}/12 caracteres)`
+              : `Te faltan ${12 - password.length} caracteres (${password.length}/12)`}
+        </p>
         <button>Guardar contraseña</button>
         <p role="status">{message}</p>
         <Link to="/">Ir al panel</Link>
@@ -275,23 +314,22 @@ function Workspace() {
         <nav onClick={() => setMenu(false)}>
           {s.role === "admin" && (
             <NavLink to="/" end>
-              ◫ <span>Resumen</span>
+              <span>Resumen</span>
             </NavLink>
           )}
           <NavLink to="/reports">
-            ▤{" "}
             <span>{s.role === "admin" ? "Reportes" : "Mis asignaciones"}</span>
           </NavLink>
           {s.role === "admin" && (
             <>
               <NavLink to="/staff">
-                ♧ <span>Personal</span>
+                <span>Personal</span>
               </NavLink>
               <NavLink to="/categories">
-                ▦ <span>Categorías</span>
+                <span>Categorías</span>
               </NavLink>
               <NavLink to="/areas">
-                ⌘ <span>Áreas de atención</span>
+                <span>Áreas de atención</span>
               </NavLink>
             </>
           )}
@@ -324,7 +362,7 @@ function Workspace() {
             aria-label="Abrir menú"
             onClick={() => setMenu(!menu)}
           >
-            ☰
+            Menú
           </button>
           <div className="topbar-tag">
             <span className="pulse-dot"></span> GOBIERNO MUNICIPAL · CENTRO DE MANDO Y ATENCIÓN
@@ -336,7 +374,7 @@ function Workspace() {
               onClick={toggleTheme}
               title="Cambiar entre modo claro y modo oscuro"
             >
-              {theme === "dark" ? "☀️ Modo Claro" : "🌙 Modo Oscuro"}
+              {theme === "dark" ? "Modo claro" : "Modo oscuro"}
             </button>
             <div className="user">
               <span className="avatar">{s.name.slice(0, 1).toUpperCase()}</span>

@@ -50,7 +50,7 @@ export function CategoryBadge({
           style={{ backgroundColor: style.color, color: "#ffffff" }}
           title={`${duplicateCount + 1} reportes ciudadanos agrupados de esta misma incidencia en rango corto`}
         >
-          🔥 ×{duplicateCount + 1}
+          ×{duplicateCount + 1}
         </strong>
       )}
     </span>
@@ -309,14 +309,14 @@ export function Map({
         tooltipEl.style.lineHeight = "1.35";
         const strongEl = document.createElement("strong");
         strongEl.style.color = style.color;
-        strongEl.textContent = `${style.emoji} ${categoryName}`;
+        strongEl.textContent = categoryName;
         tooltipEl.appendChild(strongEl);
         const br = document.createElement("br");
         tooltipEl.appendChild(br);
         const subText = document.createElement("span");
         subText.textContent =
           cluster.count > 1
-            ? `🔥 ${cluster.count} reportes agrupados (rango ≤ ${activeRadius}m) · Principal: ${cluster.primary.folio}`
+            ? `${cluster.count} reportes agrupados (rango ≤ ${activeRadius}m) · Principal: ${cluster.primary.folio}`
             : `Folio: ${cluster.primary.folio}`;
         tooltipEl.appendChild(subText);
 
@@ -336,7 +336,7 @@ export function Map({
         const catTag = document.createElement("strong");
         catTag.style.color = style.color;
         catTag.style.fontSize = "13px";
-        catTag.textContent = `${style.emoji} ${categoryName}`;
+        catTag.textContent = categoryName;
         headerEl.appendChild(catTag);
 
         const countTag = document.createElement("span");
@@ -385,7 +385,7 @@ export function Map({
 
           const link = document.createElement("a");
           link.href = `/reports/${item.id}`;
-          link.textContent = "Abrir ↗";
+          link.textContent = "Abrir";
           link.style.fontWeight = "700";
           link.style.color = "#2563eb";
           row.appendChild(link);
@@ -419,14 +419,14 @@ export function Map({
                 className={viewMode === "heatmap" ? "heat-btn active" : "heat-btn"}
                 onClick={() => setViewMode("heatmap")}
               >
-                🔥 Mapa de calor agrupado
+                Mapa de calor agrupado
               </button>
               <button
                 type="button"
                 className={viewMode === "points" ? "heat-btn active" : "heat-btn"}
                 onClick={() => setViewMode("points")}
               >
-                📍 Puntos individuales
+                Puntos individuales
               </button>
             </div>
 
@@ -498,12 +498,12 @@ export function Map({
           {viewMode === "heatmap" && (
             <div className="heatmap-summary-bar">
               <span>
-                📊 <strong>{filteredReports.length}</strong> reporte(s) en vista →{" "}
+                <strong>{filteredReports.length}</strong> reporte(s) en vista →{" "}
                 <strong>{clusters.length}</strong> incidencia(s) única(s) por tipo
               </span>
               {totalDuplicatesGrouped > 0 ? (
                 <span className="heatmap-dedup-tag">
-                  🔥 {totalDuplicatesGrouped} reporte(s) repetido(s) agrupado(s) en ≤{" "}
+                  {totalDuplicatesGrouped} reporte(s) repetido(s) agrupado(s) en ≤{" "}
                   {activeRadius} m
                 </span>
               ) : (

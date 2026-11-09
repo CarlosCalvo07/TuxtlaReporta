@@ -253,7 +253,7 @@ export default function Operations() {
                     color: mode === "dark" ? "#60a5fa" : "#1d4ed8",
                   }}
                 >
-                  🔄 Actualizar
+                  Actualizar
                 </Text>
               </Pressable>
             </View>
@@ -463,7 +463,7 @@ export default function Operations() {
                       : colors.textSecondary,
                   }}
                 >
-                  🔥 {groupDuplicates ? "Agrupando repetidos (≤45m)" : "Agrupar repetidos (≤45m)"}
+                  {groupDuplicates ? "Agrupando repetidos (≤45m)" : "Agrupar repetidos (≤45m)"}
                 </Text>
               </Pressable>
 
@@ -490,14 +490,14 @@ export default function Operations() {
                     color: colors.text,
                   }}
                 >
-                  {showFilters ? "▲ Ocultar filtros" : "⚙️ Filtrar reportes"}
+                  {showFilters ? "Ocultar filtros" : "Filtrar reportes"}
                 </Text>
               </Pressable>
             </View>
 
             {duplicatesGroupedCount > 0 && groupDuplicates && (
               <Text style={{ fontSize: 11.5, color: "#f59e0b", fontWeight: "600" }}>
-                🔥 {duplicatesGroupedCount} reporte(s) repetido(s) del mismo tipo fueron agrupados en un radio de {DEFAULT_CLUSTER_RADIUS_M} m.
+                {duplicatesGroupedCount} reporte(s) repetido(s) del mismo tipo fueron agrupados en un radio de {DEFAULT_CLUSTER_RADIUS_M} m.
               </Text>
             )}
 
@@ -748,7 +748,7 @@ export default function Operations() {
                           color: "#ffffff",
                         }}
                       >
-                        🔥 ×{extraCount + 1} reportes en ≤{DEFAULT_CLUSTER_RADIUS_M}m
+                        ×{extraCount + 1} reportes en ≤{DEFAULT_CLUSTER_RADIUS_M}m
                       </Text>
                     </View>
                   )}
@@ -766,7 +766,7 @@ export default function Operations() {
                 </Text>
 
                 <Text style={styles.small}>
-                  📍 {r.neighborhood || "Sin colonia especificada"} ·{" "}
+                  {r.neighborhood || "Sin colonia especificada"} ·{" "}
                   {dateLabel(r.created_at)}
                 </Text>
 
@@ -795,7 +795,7 @@ export default function Operations() {
                         color: "#10b981",
                       }}
                     >
-                      🧭 Cómo llegar (Maps)
+                      Cómo llegar (Maps)
                     </Text>
                   </Pressable>
                   <Text
@@ -834,7 +834,7 @@ export default function Operations() {
                   fontSize: 13,
                 }}
               >
-                Pulsa "🔄 Actualizar" o cambia los filtros para consultar otras asignaciones.
+                Pulsa "Actualizar" o cambia los filtros para consultar otras asignaciones.
               </Text>
             </View>
           )}
@@ -930,7 +930,7 @@ export default function Operations() {
             />
 
             <Text style={styles.small}>
-              📊 {searchedRows.length} reporte(s) → {clusters.length} punto(s) de
+              {searchedRows.length} reporte(s) → {clusters.length} punto(s) de
               atención únicos ({duplicatesGroupedCount} repetido(s) agrupado(s) en ≤{" "}
               {DEFAULT_CLUSTER_RADIUS_M} m). Toca cualquier círculo en el mapa para
               abrir su expediente.
@@ -964,7 +964,7 @@ export default function Operations() {
                   <Text
                     style={{ fontSize: 13.5, fontWeight: "800", color: st.color }}
                   >
-                    {st.emoji} {cat?.name || st.label}
+                    {cat?.name || st.label}
                   </Text>
                   <Text
                     style={{
@@ -974,7 +974,7 @@ export default function Operations() {
                     }}
                   >
                     {c.count > 1
-                      ? `🔥 ${c.count} reportes agrupados`
+                      ? `${c.count} reportes agrupados`
                       : c.primary.folio}
                   </Text>
                 </View>
@@ -1022,7 +1022,9 @@ export default function Operations() {
                 marginBottom: 8,
               }}
             >
-              <Text style={{ fontSize: 28 }}>🛠️</Text>
+              <Text style={{ fontSize: 24, fontWeight: "800", color: "#3b82f6" }}>
+                {(profile.data?.display_name || "P").slice(0, 1).toUpperCase()}
+              </Text>
             </View>
             <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>
               {profile.data?.display_name || "Personal Operativo"}
@@ -1088,7 +1090,7 @@ export default function Operations() {
             ]}
           >
             <Text style={[styles.heading, { color: colors.text }]}>
-              🔔 Notificaciones de asignaciones
+              Notificaciones de asignaciones
             </Text>
             <Text style={styles.small}>
               Recibe alertas inmediatas cuando se te asigne una nueva incidencia en tu área.
@@ -1138,7 +1140,7 @@ export default function Operations() {
           style={{
             flex: 1,
             alignItems: "center",
-            paddingVertical: 6,
+            paddingVertical: 8,
             borderRadius: 10,
             backgroundColor:
               activeTab === "list"
@@ -1146,10 +1148,23 @@ export default function Operations() {
                 : "transparent",
           }}
         >
-          <Text style={{ fontSize: 19 }}>📋</Text>
+          <View
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor:
+                activeTab === "list"
+                  ? mode === "dark"
+                    ? "#60a5fa"
+                    : "#1d4ed8"
+                  : "transparent",
+              marginBottom: 4,
+            }}
+          />
           <Text
             style={{
-              fontSize: 11.5,
+              fontSize: 12.5,
               fontWeight: activeTab === "list" ? "800" : "500",
               color:
                 activeTab === "list"
@@ -1157,7 +1172,6 @@ export default function Operations() {
                     ? "#60a5fa"
                     : "#1d4ed8"
                   : colors.textMuted,
-              marginTop: 2,
             }}
           >
             Asignaciones
@@ -1170,7 +1184,7 @@ export default function Operations() {
           style={{
             flex: 1,
             alignItems: "center",
-            paddingVertical: 6,
+            paddingVertical: 8,
             borderRadius: 10,
             backgroundColor:
               activeTab === "heatmap"
@@ -1178,10 +1192,23 @@ export default function Operations() {
                 : "transparent",
           }}
         >
-          <Text style={{ fontSize: 19 }}>🔥</Text>
+          <View
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor:
+                activeTab === "heatmap"
+                  ? mode === "dark"
+                    ? "#60a5fa"
+                    : "#1d4ed8"
+                  : "transparent",
+              marginBottom: 4,
+            }}
+          />
           <Text
             style={{
-              fontSize: 11.5,
+              fontSize: 12.5,
               fontWeight: activeTab === "heatmap" ? "800" : "500",
               color:
                 activeTab === "heatmap"
@@ -1189,7 +1216,6 @@ export default function Operations() {
                     ? "#60a5fa"
                     : "#1d4ed8"
                   : colors.textMuted,
-              marginTop: 2,
             }}
           >
             Mapa de calor
@@ -1202,7 +1228,7 @@ export default function Operations() {
           style={{
             flex: 1,
             alignItems: "center",
-            paddingVertical: 6,
+            paddingVertical: 8,
             borderRadius: 10,
             backgroundColor:
               activeTab === "profile"
@@ -1210,10 +1236,23 @@ export default function Operations() {
                 : "transparent",
           }}
         >
-          <Text style={{ fontSize: 19 }}>👤</Text>
+          <View
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor:
+                activeTab === "profile"
+                  ? mode === "dark"
+                    ? "#60a5fa"
+                    : "#1d4ed8"
+                  : "transparent",
+              marginBottom: 4,
+            }}
+          />
           <Text
             style={{
-              fontSize: 11.5,
+              fontSize: 12.5,
               fontWeight: activeTab === "profile" ? "800" : "500",
               color:
                 activeTab === "profile"
@@ -1221,7 +1260,6 @@ export default function Operations() {
                     ? "#60a5fa"
                     : "#1d4ed8"
                   : colors.textMuted,
-              marginTop: 2,
             }}
           >
             Mi perfil

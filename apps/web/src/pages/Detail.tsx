@@ -244,7 +244,7 @@ export default function Detail() {
           onClick={() => window.print()}
           title="Descargar reporte en formato PDF o imprimir"
         >
-          📄 Generar reporte PDF
+          Generar reporte PDF
         </button>
       </div>
 
@@ -290,7 +290,7 @@ export default function Detail() {
                 <span>
                   Agrupación en rango corto
                   <strong>
-                    🔥 {groupedDuplicates.length + 1} reportes (≤ {DEFAULT_CLUSTER_RADIUS_M} m)
+                    {groupedDuplicates.length + 1} reportes (≤ {DEFAULT_CLUSTER_RADIUS_M} m)
                   </strong>
                 </span>
               )}
@@ -308,7 +308,7 @@ export default function Detail() {
               target="_blank"
               rel="noreferrer"
             >
-              Abrir ruta de navegación ↗
+              Abrir ruta de navegación
             </a>
           </section>
 
@@ -318,7 +318,7 @@ export default function Detail() {
               <div className="panel-title">
                 <div>
                   <h2>
-                    🔥 Incidencias repetidas agrupadas ({groupedDuplicates.length + 1} reportes)
+                    Incidencias repetidas agrupadas ({groupedDuplicates.length + 1} reportes)
                   </h2>
                   <p>
                     Otros ciudadanos reportaron <strong>{currentCat?.name}</strong> en un rango
@@ -344,13 +344,13 @@ export default function Detail() {
                         <Badge status={dup.status} />
                       </div>
                       <p className="small" style={{ margin: "2px 0" }}>
-                        📍 A <strong>{dist} m</strong> de distancia · {dateLabel(dup.created_at)}
+                        A <strong>{dist} m</strong> de distancia · {dateLabel(dup.created_at)}
                       </p>
                       <p className="small" style={{ color: "var(--text-primary)" }}>
                         {dup.description}
                       </p>
                       <Link to={`/reports/${dup.id}`} style={{ fontSize: 12, fontWeight: 700 }}>
-                        Abrir expediente vinculado ↗
+                        Abrir expediente vinculado
                       </Link>
                     </div>
                   );
@@ -366,7 +366,7 @@ export default function Detail() {
             {/* Evidencia Inicial del Ciudadano */}
             <div className="evidence-block">
               <div className="evidence-header">
-                <h3>📸 Evidencia del reporte inicial (Ciudadano)</h3>
+                <h3>Evidencia del reporte inicial (Ciudadano)</h3>
                 <span className="badge-count">{initialMedia.length} foto(s)</span>
               </div>
               <p className="evidence-desc">
@@ -386,7 +386,7 @@ export default function Detail() {
             {/* Evidencia de Resolución */}
             <div className="evidence-block" style={{ marginTop: "24px" }}>
               <div className="evidence-header">
-                <h3>✅ Evidencia de resolución (Trabajo concluido)</h3>
+                <h3>Evidencia de resolución (Trabajo concluido)</h3>
                 <span className="badge-count">{resolutionMedia.length} foto(s)</span>
               </div>
               <p className="evidence-desc">
@@ -400,7 +400,7 @@ export default function Detail() {
                 </div>
               ) : (
                 <div className="empty-box warning">
-                  ⚠️ Aún no se ha adjuntado evidencia fotográfica de solución.
+                  Aún no se ha adjuntado evidencia fotográfica de solución.
                 </div>
               )}
 
@@ -408,7 +408,7 @@ export default function Detail() {
               {r.status !== "solucionado" && (
                 <div style={{ marginTop: "14px" }}>
                   <label className="upload-btn">
-                    <span>📷 {mutate.isPending ? "Subiendo foto…" : "Adjuntar foto de resolución"}</span>
+                    <span>{mutate.isPending ? "Subiendo foto…" : "Adjuntar foto de resolución"}</span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
@@ -424,7 +424,7 @@ export default function Detail() {
             {progressMedia.length > 0 && (
               <div className="evidence-block" style={{ marginTop: "24px" }}>
                 <div className="evidence-header">
-                  <h3>🛠️ Evidencia de seguimiento y atención</h3>
+                  <h3>Evidencia de seguimiento y atención</h3>
                   <span className="badge-count">{progressMedia.length} foto(s)</span>
                 </div>
                 <div className="photos">
@@ -477,7 +477,7 @@ export default function Detail() {
               <div className="requirements-box">
                 <span className="req-title">Requisitos para marcar como Solucionado:</span>
                 <div className={`req-item ${hasResolutionPhoto ? "done" : "pending"}`}>
-                  <span className="req-check">{hasResolutionPhoto ? "✓" : "○"}</span>
+                  <span className="req-check">{hasResolutionPhoto ? "[OK]" : "○"}</span>
                   <div className="req-content">
                     <strong>1. Evidencia fotográfica de solución:</strong>
                     <span>
@@ -487,7 +487,7 @@ export default function Detail() {
                     </span>
                     {!hasResolutionPhoto && (
                       <label className="quick-upload-inline">
-                        📷 Subir foto de solución
+                        Subir foto de solución
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
@@ -500,7 +500,7 @@ export default function Detail() {
                 </div>
 
                 <div className={`req-item ${hasResolutionNote ? "done" : "pending"}`}>
-                  <span className="req-check">{hasResolutionNote ? "✓" : "○"}</span>
+                  <span className="req-check">{hasResolutionNote ? "[OK]" : "○"}</span>
                   <div className="req-content">
                     <strong>2. Nota de resolución del trabajo:</strong>
                     <span>
@@ -583,7 +583,7 @@ export default function Detail() {
                   ? "Guardando…"
                   : next === "solucionado"
                     ? canSolve
-                      ? "✅ Marcar como Solucionado"
+                      ? "Marcar como Solucionado"
                       : "Cumple los 2 requisitos para solucionar"
                     : statusLabels[next]}
               </button>
@@ -627,7 +627,7 @@ export default function Detail() {
                       className="btn-edit"
                       onClick={() => setIsEditingAssignee(true)}
                     >
-                      ✏️ Reasignar
+                      Reasignar
                     </button>
                   )}
                 </div>
@@ -638,11 +638,11 @@ export default function Detail() {
                     {activeAssignment && !isEditingAssignee ? (
                       <div className="saved-card">
                         <div className="saved-header">
-                          <span className="chip-active">✓ Asignado actualmente</span>
+                          <span className="chip-active">Asignado actualmente</span>
                           <span className="small">{dateLabel(activeAssignment.assigned_at)}</span>
                         </div>
                         <p className="saved-name">
-                          👤 {assignedStaff?.display_name || "Personal de mantenimiento"}
+                          {assignedStaff?.display_name || "Personal de mantenimiento"}
                         </p>
                         <p className="small">
                           Estatus del trabajo: <strong>{activeAssignment.status}</strong>
@@ -766,7 +766,7 @@ export default function Detail() {
                       className="btn-edit"
                       onClick={() => setIsEditingClassification(true)}
                     >
-                      ✏️ Editar clasificación
+                      Editar clasificación
                     </button>
                   )}
                 </div>

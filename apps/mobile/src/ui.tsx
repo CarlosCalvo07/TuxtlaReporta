@@ -342,7 +342,7 @@ export function BrandHeader({
                 color: colors.text,
               }}
             >
-              {mode === "dark" ? "☀️ Claro" : "🌙 Oscuro"}
+              {mode === "dark" ? "Modo claro" : "Modo oscuro"}
             </Text>
           </Pressable>
         )}
@@ -559,20 +559,30 @@ export function PasswordRequirements({
           gap: 8,
         }}
       >
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: "700",
-            color: accentColor,
-            flex: 1,
-          }}
-        >
-          {met
-            ? "✓ Contraseña válida: cumple los requisitos"
-            : len === 0
-              ? `🔒 Requisito: mínimo ${minLength} caracteres`
-              : `⚠️ Te ${remaining === 1 ? "falta 1 carácter" : `faltan ${remaining} caracteres`}`}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: accentColor,
+            }}
+          />
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "700",
+              color: accentColor,
+              flex: 1,
+            }}
+          >
+            {met
+              ? "Contraseña válida: cumple los requisitos"
+              : len === 0
+                ? `Requisito: mínimo ${minLength} caracteres`
+                : `Te ${remaining === 1 ? "falta 1 carácter" : `faltan ${remaining} caracteres`}`}
+          </Text>
+        </View>
         <Text
           style={{
             fontSize: 12,
@@ -580,7 +590,7 @@ export function PasswordRequirements({
             color: accentColor,
           }}
         >
-          {len}/{minLength} {met ? "✓" : ""}
+          {len}/{minLength}
         </Text>
       </View>
 
@@ -692,7 +702,7 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
                 color: mode === "dark" ? "#93c5fd" : "#1e40af",
               }}
             >
-              {showPassword ? "🙈 Ocultar" : "👁️ Ver"}
+              {showPassword ? "Ocultar" : "Mostrar"}
             </Text>
           </Pressable>
         </View>

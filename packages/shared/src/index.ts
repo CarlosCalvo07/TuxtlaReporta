@@ -135,7 +135,7 @@ const CATEGORY_HEAT_STYLES: Record<CategoryHeatStyle["key"], CategoryHeatStyle> 
   bache: {
     key: "bache",
     label: "Bache / Vialidad",
-    emoji: "🕳️",
+    emoji: "",
     color: "#ef4444",
     darkColor: "#b91c1c",
     haloInner: "rgba(239, 68, 68, 0.45)",
@@ -146,7 +146,7 @@ const CATEGORY_HEAT_STYLES: Record<CategoryHeatStyle["key"], CategoryHeatStyle> 
   alumbrado: {
     key: "alumbrado",
     label: "Alumbrado público",
-    emoji: "💡",
+    emoji: "",
     color: "#f59e0b",
     darkColor: "#b45309",
     haloInner: "rgba(245, 158, 11, 0.48)",
@@ -157,7 +157,7 @@ const CATEGORY_HEAT_STYLES: Record<CategoryHeatStyle["key"], CategoryHeatStyle> 
   basura: {
     key: "basura",
     label: "Basura / Limpia",
-    emoji: "🗑️",
+    emoji: "",
     color: "#10b981",
     darkColor: "#047857",
     haloInner: "rgba(16, 185, 129, 0.45)",
@@ -168,7 +168,7 @@ const CATEGORY_HEAT_STYLES: Record<CategoryHeatStyle["key"], CategoryHeatStyle> 
   agua: {
     key: "agua",
     label: "Agua / Drenaje",
-    emoji: "💧",
+    emoji: "",
     color: "#06b6d4",
     darkColor: "#0e7490",
     haloInner: "rgba(6, 182, 212, 0.45)",
@@ -179,7 +179,7 @@ const CATEGORY_HEAT_STYLES: Record<CategoryHeatStyle["key"], CategoryHeatStyle> 
   otra: {
     key: "otra",
     label: "Otra incidencia",
-    emoji: "📍",
+    emoji: "",
     color: "#a855f7",
     darkColor: "#6b21a8",
     haloInner: "rgba(168, 85, 247, 0.45)",

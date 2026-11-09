@@ -278,7 +278,7 @@ export default function Detail() {
               }}
             >
               <Text style={{ fontSize: 11, fontWeight: "800", color: "#fff" }}>
-                🔥 ×{groupedDuplicates.length + 1} reportes en ≤{DEFAULT_CLUSTER_RADIUS_M}m
+                ×{groupedDuplicates.length + 1} reportes en ≤{DEFAULT_CLUSTER_RADIUS_M}m
               </Text>
             </View>
           )}
@@ -328,7 +328,7 @@ export default function Detail() {
                 marginTop: 2,
               }}
             >
-              👤 {assignedWorker?.display_name || "Personal operativo asignado"}
+              {assignedWorker?.display_name || "Personal operativo asignado"}
             </Text>
             {activeAssignment.assignment_note ? (
               <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
@@ -357,7 +357,7 @@ export default function Detail() {
                 fontWeight: "600",
               }}
             >
-              ⚠️ Sin responsable de atención asignado aún
+              Sin responsable de atención asignado aún
             </Text>
           </View>
         )}
@@ -427,7 +427,7 @@ export default function Detail() {
                 color: mode === "dark" ? "#60a5fa" : "#1d4ed8",
               }}
             >
-              📍 Coordenadas de la Ubicación:
+              Coordenadas de la ubicación:
             </Text>
             <Text style={{ fontSize: 12, color: colors.textSecondary }}>
               {r.latitude.toFixed(6)}, {r.longitude.toFixed(6)}
@@ -438,7 +438,7 @@ export default function Detail() {
           <View style={{ flex: 1 }}>
             <Button
               secondary
-              title="📍 Ver en Google Maps"
+              title="Ver en Google Maps"
               onPress={() => {
                 void Linking.openURL(
                   `https://www.google.com/maps/search/?api=1&query=${r.latitude},${r.longitude}`,
@@ -450,7 +450,7 @@ export default function Detail() {
             <View style={{ flex: 1 }}>
               <Button
                 secondary
-                title="🧭 Cómo llegar"
+                title="Cómo llegar"
                 onPress={() => {
                   void Linking.openURL(
                     `https://www.google.com/maps/dir/?api=1&destination=${r.latitude},${r.longitude}`,
@@ -465,7 +465,7 @@ export default function Detail() {
       {/* Incidencias repetidas agrupadas en rango corto (para personal y admin) */}
       {s.role !== "citizen" && groupedDuplicates.length > 0 && (
         <Card>
-          <Heading>🔥 Incidencias repetidas agrupadas ({groupedDuplicates.length})</Heading>
+          <Heading>Incidencias repetidas agrupadas ({groupedDuplicates.length})</Heading>
           <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>
             Otros ciudadanos reportaron esta misma categoría ({catObj?.name || catStyle.label}) a menos de {DEFAULT_CLUSTER_RADIUS_M} metros:
           </Text>
@@ -502,7 +502,7 @@ export default function Detail() {
 
       {/* Evidencia Inicial (Ciudadano) */}
       <Card>
-        <Heading>📸 Evidencia Inicial del Reporte</Heading>
+        <Heading>Evidencia Inicial del Reporte</Heading>
         <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
           Fotografías capturadas por la ciudadanía al registrar la solicitud:
         </Text>
@@ -522,7 +522,7 @@ export default function Detail() {
 
       {/* Evidencia de Resolución (Personal Municipal) */}
       <Card>
-        <Heading>✅ Evidencia de Trabajo Concluido</Heading>
+        <Heading>Evidencia de Trabajo Concluido</Heading>
         <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
           Fotografía de verificación obligatoria del trabajo realizado en campo:
         </Text>
@@ -531,7 +531,7 @@ export default function Detail() {
             <View key={m.id} style={{ gap: 6, marginBottom: 12 }}>
               <Photo path={m.storage_path} />
               <Text style={{ fontSize: 12, color: "#10b981", fontWeight: "700" }}>
-                ✓ Fotografía de resolución validada
+                Fotografía de resolución validada
               </Text>
             </View>
           ))
@@ -555,7 +555,7 @@ export default function Detail() {
                 lineHeight: 18,
               }}
             >
-              ⚠️ Pendiente: Para dar por solucionada la incidencia es indispensable subir la fotografía de conclusión del trabajo.
+              Pendiente: Para dar por solucionada la incidencia es indispensable subir la fotografía de conclusión del trabajo.
             </Text>
           </View>
         )}
@@ -564,7 +564,7 @@ export default function Detail() {
       {/* Panel de Atención Operativa para Personal y Responsables */}
       {s.role !== "citizen" && r.status !== "solucionado" && (
         <Card>
-          <Heading>🛠️ Panel de Atención Operativa</Heading>
+          <Heading>Panel de Atención Operativa</Heading>
           <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>
             Registre el seguimiento técnico y la evidencia de resolución.
           </Text>
@@ -602,7 +602,7 @@ export default function Detail() {
                   fontWeight: "600",
                 }}
               >
-                {hasResolutionPhoto ? "✓" : "✗"} 1. Fotografía de trabajo concluido registrada ({resolutionPhotos.length})
+                {hasResolutionPhoto ? "[Cumplido]" : "[Pendiente]"} 1. Fotografía de trabajo concluido registrada ({resolutionPhotos.length})
               </Text>
               <Text
                 style={{
@@ -611,7 +611,7 @@ export default function Detail() {
                   fontWeight: "600",
                 }}
               >
-                {hasValidNote ? "✓" : "✗"} 2. Observación técnica registrada (mín. 5 caracteres, actual: {note.trim().length})
+                {hasValidNote ? "[Cumplido]" : "[Pendiente]"} 2. Observación técnica registrada (mín. 5 caracteres, actual: {note.trim().length})
               </Text>
             </View>
           )}
@@ -626,14 +626,14 @@ export default function Detail() {
 
           <Button
             secondary
-            title="📷 Tomar foto de conclusión con cámara"
+            title="Tomar foto de conclusión con cámara"
             disabled={mutation.isPending}
             onPress={() => mutation.mutate(() => upload(true))}
           />
 
           <Button
             secondary
-            title="🖼️ Elegir foto de conclusión de galería"
+            title="Elegir foto de conclusión de galería"
             disabled={mutation.isPending}
             onPress={() => mutation.mutate(() => upload(false))}
           />
@@ -728,7 +728,7 @@ export default function Detail() {
               >
                 {next === "solucionado"
                   ? canSolve
-                    ? "✓ Marcar como Solucionado"
+                    ? "Marcar como Solucionado"
                     : "Completar requisitos para Solucionar"
                   : `Avanzar a: ${statusLabels[next]}`}
               </Text>
@@ -769,7 +769,7 @@ export default function Detail() {
                       color: mode === "dark" ? "#60a5fa" : "#1d4ed8",
                     }}
                   >
-                    {isEditingAssignee ? "Cancelar" : "✏️ Reasignar"}
+                    {isEditingAssignee ? "Cancelar" : "Reasignar"}
                   </Text>
                 </Pressable>
               )}
@@ -883,7 +883,7 @@ export default function Detail() {
                     color: mode === "dark" ? "#60a5fa" : "#1d4ed8",
                   }}
                 >
-                  {isEditingClassification ? "Cancelar" : "✏️ Modificar"}
+                  {isEditingClassification ? "Cancelar" : "Modificar"}
                 </Text>
               </Pressable>
             </View>

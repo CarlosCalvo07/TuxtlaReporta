@@ -47,7 +47,7 @@ export default function Dashboard() {
           <p>Consulta, coordina y da seguimiento a la atención urbana.</p>
         </div>
         <Link className="button" to="/reports">
-          Ver reportes ↗
+          Ver reportes
         </Link>
       </div>
       <ErrorNotice error={metrics.error || recent.error || map.error} />
@@ -72,19 +72,16 @@ export default function Dashboard() {
       </div>
       <div className="stats">
         {[
-          ["total", "Reportes totales", "↗"],
-          ["en_revision", "En revisión", "◷"],
-          ["en_atencion", "En atención", "↻"],
-          ["solucionado", "Solucionados", "✓"],
-        ].map(([key, label, icon]) => (
+          ["total", "Reportes totales"],
+          ["en_revision", "En revisión"],
+          ["en_atencion", "En atención"],
+          ["solucionado", "Solucionados"],
+        ].map(([key, label]) => (
           <article
             className={`stat ${key === "solucionado" ? "green" : ""}`}
             key={key}
           >
-            <span>
-              {label}
-              <i>{icon}</i>
-            </span>
+            <span>{label}</span>
             <strong>
               {metrics.isPending ? "—" : String(m?.[key!] ?? "—")}
             </strong>
@@ -246,7 +243,7 @@ export default function Dashboard() {
                       <Badge status={r.status} />
                     </td>
                     <td>
-                      <Link to={`/reports/${r.id}`}>Abrir ↗</Link>
+                      <Link to={`/reports/${r.id}`}>Abrir</Link>
                     </td>
                   </tr>
                 );
