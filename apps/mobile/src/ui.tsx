@@ -477,8 +477,228 @@ export function Button({
   );
 }
 
+const MASK_DOT = "•";
+
+function applyMaskedPasswordChange(prevReal: string, nextMasked: string): string {
+  if (nextMasked === MASK_DOT.repeat(prevReal.length)) return prevReal;
+  let prefixLen = 0;
+  const minLen = Math.min(prevReal.length, nextMasked.length);
+  while (prefixLen < minLen && nextMasked[prefixLen] === MASK_DOT) {
+    prefixLen++;
+  }
+  let suffixLen = 0;
+  while (
+    suffixLen < prevReal.length - prefixLen &&
+    suffixLen < nextMasked.length - prefixLen &&
+    nextMasked[nextMasked.length - 1 - suffixLen] === MASK_DOT
+  ) {
+    suffixLen++;
+  }
+  const inserted = nextMasked.slice(prefixLen, nextMasked.length - suffixLen);
+  return (
+    prevReal.slice(0, prefixLen) +
+    inserted +
+    prevReal.slice(prevReal.length - suffixLen)
+  );
+}
+
+export function PasswordRequirements({
+  value,
+  minLength = 12,
+}: {
+  value: string;
+  minLength?: number;
+}) {
+  const { mode } = useTheme();
+  const len = value.length;
+  const met = len >= minLength;
+  const remaining = Math.max(0, minLength - len);
+  const progress = Math.min(1, len / minLength);
+
+  const accentColor = met
+    ? "#10b981"
+    : len > 0
+      ? "#f59e0b"
+      : mode === "dark"
+        ? "#64748b"
+        : "#475569";
+
+  const bgColor = met
+    ? "rgba(16, 185, 129, 0.14)"
+    : len > 0
+      ? "rgba(245, 158, 11, 0.14)"
+      : mode === "dark"
+        ? "rgba(15, 23, 42, 0.6)"
+        : "rgba(241, 245, 249, 0.9)";
+
+  const borderColor = met
+    ? "rgba(16, 185, 129, 0.45)"
+    : len > 0
+      ? "rgba(245, 158, 11, 0.45)"
+      : mode === "dark"
+        ? "rgba(148, 163, 184, 0.22)"
+        : "#cbd5e1";
+
+  return (
+    <View
+      style={{
+        marginTop: 6,
+        padding: 10,
+        borderRadius: 8,
+        backgroundColor: bgColor,
+        borderWidth: 1,
+        borderColor,
+        gap: 6,
+      }}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: "700",
+            color: accentColor,
+            flex: 1,
+          }}
+        >
+          {met
+            ? "✓ Contraseña válida: cumple los requisitos"
+            : len === 0
+              ? `🔒 Requisito: mínimo ${minLength} caracteres`
+              : `⚠️ Te ${remaining === 1 ? "falta 1 carácter" : `faltan ${remaining} caracteres`}`}
+        </Text>
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: "800",
+            color: accentColor,
+          }}
+        >
+          {len}/{minLength} {met ? "✓" : ""}
+        </Text>
+      </View>
+
+      <View
+        style={{
+          height: 6,
+          borderRadius: 999,
+          backgroundColor:
+            mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(15,23,42,0.1)",
+          overflow: "hidden",
+        }}
+      >
+        <View
+          style={{
+            width: `${Math.round(progress * 100)}%`,
+            height: "100%",
+            borderRadius: 999,
+            backgroundColor: accentColor,
+          }}
+        />
+      </View>
+    </View>
+  );
+}
+
 export function Field({ label, ...props }: TextInputProps & { label: string }) {
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
+  const isPassword = Boolean(props.secureTextEntry);
+  const [showPassword, setShowPassword] = useState(false);
+
+  if (isPassword) {
+    const realValue = typeof props.value === "string" ? props.value : "";
+    const displayedValue = showPassword
+      ? realValue
+      : MASK_DOT.repeat(realValue.length);
+
+    return (
+      <View>
+        <Text style={styles.label}>{label}</Text>
+        <View
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.inputBg,
+              borderColor: colors.inputBorder,
+              paddingVertical: 0,
+              paddingRight: 8,
+              flexDirection: "row",
+              alignItems: "center",
+            },
+          ]}
+        >
+          <TextInput
+            accessibilityLabel={label}
+            placeholderTextColor={colors.textMuted}
+            {...props}
+            secureTextEntry={false}
+            autoCorrect={false}
+            spellCheck={false}
+            autoCapitalize="none"
+            contextMenuHidden={!showPassword}
+            value={displayedValue}
+            onChangeText={(text) => {
+              if (!props.onChangeText) return;
+              if (showPassword) {
+                props.onChangeText(text);
+              } else {
+                props.onChangeText(applyMaskedPasswordChange(realValue, text));
+              }
+            }}
+            style={[
+              {
+                flex: 1,
+                color: colors.text,
+                fontSize: 15,
+                paddingVertical: 12,
+                letterSpacing: !showPassword && realValue.length > 0 ? 2 : 0,
+              },
+              props.style,
+            ]}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+            }
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            onPress={() => setShowPassword((prev) => !prev)}
+            style={({ pressed }) => ({
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              borderRadius: 6,
+              backgroundColor:
+                mode === "dark"
+                  ? "rgba(59, 130, 246, 0.16)"
+                  : "rgba(30, 64, 175, 0.1)",
+              borderWidth: 1,
+              borderColor:
+                mode === "dark"
+                  ? "rgba(59, 130, 246, 0.35)"
+                  : "rgba(30, 64, 175, 0.25)",
+              opacity: pressed ? 0.75 : 1,
+            })}
+          >
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: "700",
+                color: mode === "dark" ? "#93c5fd" : "#1e40af",
+              }}
+            >
+              {showPassword ? "🙈 Ocultar" : "👁️ Ver"}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View>

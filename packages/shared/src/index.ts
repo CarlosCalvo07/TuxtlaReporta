@@ -33,13 +33,64 @@ export class AppError extends Error {
   }
 }
 export function friendlyError(error: unknown): string {
-  if (error instanceof AppError) return error.message;
-  if (error && typeof error === "object" && "issues" in error)
+  if (error && typeof error === "object" && "issues" in error) {
+    const issues = (error as { issues?: { message?: string }[] }).issues;
+    const firstMsg = issues?.[0]?.message;
+    if (firstMsg && !/^(Too small|Too big|Invalid|Expected)/i.test(firstMsg)) {
+      return firstMsg;
+    }
     return "Revisa los datos del formulario.";
+  }
   const message =
-    error && typeof error === "object" && "message" in error
-      ? String(error.message)
-      : "";
+    error instanceof AppError
+      ? error.message
+      : error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : typeof error === "string"
+          ? error
+          : "";
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("invalid login credentials") ||
+    lower.includes("invalid_credentials")
+  )
+    return "Correo electrónico o contraseña incorrectos. Verifica tus datos e inténtalo de nuevo.";
+  if (lower.includes("email not confirmed"))
+    return "Tu correo electrónico aún no ha sido confirmado. Revisa tu bandeja de entrada o carpeta de spam.";
+  if (
+    lower.includes("user already registered") ||
+    lower.includes("already been registered")
+  )
+    return "Este correo electrónico ya se encuentra registrado.";
+  if (
+    lower.includes("password should be at least") ||
+    lower.includes(">=12 characters") ||
+    lower.includes("at least 12 characters")
+  )
+    return "La contraseña debe tener al menos 12 caracteres.";
+  if (
+    lower.includes("unable to validate email") ||
+    lower.includes("invalid email") ||
+    lower.includes("anonymous sign-ins are disabled")
+  )
+    return "Ingresa un correo electrónico válido.";
+  if (
+    lower.includes("rate limit") ||
+    lower.includes("for security purposes") ||
+    lower.includes("too many requests")
+  )
+    return "Has realizado demasiados intentos seguidos. Por seguridad, espera unos minutos antes de volver a intentarlo.";
+  if (
+    lower.includes("new password should be different") ||
+    lower.includes("same_password")
+  )
+    return "La nueva contraseña debe ser diferente a la actual.";
+  if (
+    lower.includes("invalid session") ||
+    lower.includes("auth session missing") ||
+    lower.includes("jwt expired")
+  )
+    return "Tu sesión ha expirado. Por favor inicia sesión nuevamente.";
   if (message.includes("CONFLICT"))
     return "El reporte cambió. Actualiza la vista e inténtalo nuevamente.";
   if (message.includes("AREA_MISMATCH"))
@@ -62,6 +113,7 @@ export function friendlyError(error: unknown): string {
     return "Reasigna los trabajos activos antes de cambiar el área o desactivar al responsable.";
   if (message.includes("Failed to fetch") || message.includes("Network"))
     return "No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.";
+  if (error instanceof AppError && message) return message;
   return "No se pudo completar la operación. Revisa tus permisos o vuelve a intentarlo.";
 }
 

@@ -5,11 +5,20 @@ import { friendlyError } from "@tuxtla/shared";
 import { registrationSchema } from "@tuxtla/validation";
 import type { CitizenRegistrationInput } from "@tuxtla/types";
 import { api } from "./backend";
-import { Button, Field, Screen, styles, Choices, BrandHeader } from "./ui";
+import {
+  Button,
+  Field,
+  Screen,
+  styles,
+  Choices,
+  BrandHeader,
+  PasswordRequirements,
+} from "./ui";
 export default function Auth() {
   const [register, setRegister] = useState(false),
     [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
+    [ageInput, setAgeInput] = useState("18"),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const {
@@ -17,12 +26,13 @@ export default function Auth() {
     handleSubmit,
     formState: { errors },
     setError,
+    clearErrors,
   } = useForm<CitizenRegistrationInput>({
     defaultValues: {
       first_names: "",
       paternal_surname: "",
       maternal_surname: "",
-      age: 17,
+      age: 18,
       sex: "H",
       curp: "",
       email: "",
@@ -56,15 +66,36 @@ export default function Auth() {
           <View style={styles.card}>
             {(
               [
-                { key: "first_names", label: "Nombre(s)" },
-                { key: "paternal_surname", label: "Apellido paterno" },
+                {
+                  key: "first_names",
+                  label: "Nombre(s)",
+                  placeholder: "Ej. Carlos Alberto",
+                },
+                {
+                  key: "paternal_surname",
+                  label: "Apellido paterno",
+                  placeholder: "Ej. Calvo",
+                },
                 {
                   key: "maternal_surname",
                   label: "Apellido materno (si aplica)",
+                  placeholder: "Ej. Gómez",
                 },
-                { key: "curp", label: "CURP" },
-                { key: "email", label: "Correo electrónico" },
-                { key: "password", label: "Contraseña (mínimo 12 caracteres)" },
+                {
+                  key: "curp",
+                  label: "CURP (18 caracteres)",
+                  placeholder: "Ej. CAGC010709HCSLMRA6",
+                },
+                {
+                  key: "email",
+                  label: "Correo electrónico",
+                  placeholder: "ejemplo@correo.com",
+                },
+                {
+                  key: "password",
+                  label: "Contraseña (mínimo 12 caracteres)",
+                  placeholder: "Escribe al menos 12 caracteres",
+                },
               ] as const
             ).map((f) => (
               <Controller
@@ -72,12 +103,22 @@ export default function Auth() {
                 control={control}
                 name={f.key}
                 render={({ field }) => (
-                  <>
+                  <View style={{ gap: 4 }}>
                     <Field
                       label={f.label}
+                      placeholder={f.placeholder}
                       value={field.value}
-                      onChangeText={field.onChange}
+                      onChangeText={(val) => {
+                        const nextVal =
+                          f.key === "curp" ? val.toUpperCase() : val;
+                        field.onChange(nextVal);
+                        if (errors[f.key]) clearErrors(f.key);
+                      }}
                       secureTextEntry={f.key === "password"}
+                      keyboardType={
+                        f.key === "email" ? "email-address" : "default"
+                      }
+                      maxLength={f.key === "curp" ? 18 : 128}
                       autoCapitalize={
                         f.key === "email" || f.key === "password"
                           ? "none"
@@ -86,10 +127,13 @@ export default function Auth() {
                             : "words"
                       }
                     />
+                    {f.key === "password" && (
+                      <PasswordRequirements value={field.value} minLength={12} />
+                    )}
                     {errors[f.key] && (
                       <Text style={styles.error}>{errors[f.key]?.message}</Text>
                     )}
-                  </>
+                  </View>
                 )}
               />
             ))}
@@ -97,12 +141,24 @@ export default function Auth() {
               control={control}
               name="age"
               render={({ field }) => (
-                <Field
-                  label="Edad"
-                  keyboardType="number-pad"
-                  value={String(field.value)}
-                  onChangeText={(s) => field.onChange(Number(s))}
-                />
+                <View style={{ gap: 4 }}>
+                  <Field
+                    label="Edad (años cumplidos)"
+                    keyboardType="number-pad"
+                    maxLength={3}
+                    placeholder="Ej. 25"
+                    value={ageInput}
+                    onChangeText={(s) => {
+                      const digits = s.replace(/\D/g, "");
+                      setAgeInput(digits);
+                      field.onChange(digits ? Number(digits) : 0);
+                      if (errors.age) clearErrors("age");
+                    }}
+                  />
+                  {errors.age && (
+                    <Text style={styles.error}>{errors.age.message}</Text>
+                  )}
+                </View>
               )}
             />
             <Controller
@@ -116,7 +172,10 @@ export default function Auth() {
                     { id: "M", name: "Mujer" },
                   ]}
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(val) => {
+                    field.onChange(val);
+                    if (errors.sex) clearErrors("sex");
+                  }}
                 />
               )}
             />
@@ -137,15 +196,26 @@ export default function Auth() {
               control={control}
               name="privacy_consent"
               render={({ field }) => (
-                <Button
-                  secondary
-                  title={
-                    field.value
-                      ? "✓ Acepto el aviso de privacidad"
-                      : "Aceptar el aviso de privacidad"
-                  }
-                  onPress={() => field.onChange(!field.value)}
-                />
+                <View style={{ gap: 6 }}>
+                  <Button
+                    secondary
+                    title={
+                      field.value
+                        ? "✓ Acepto el aviso de privacidad"
+                        : "Aceptar el aviso de privacidad"
+                    }
+                    onPress={() => {
+                      field.onChange(!field.value);
+                      if (errors.privacy_consent)
+                        clearErrors("privacy_consent");
+                    }}
+                  />
+                  {errors.privacy_consent && (
+                    <Text style={styles.error}>
+                      {errors.privacy_consent.message}
+                    </Text>
+                  )}
+                </View>
               )}
             />
           </View>
@@ -154,14 +224,22 @@ export default function Auth() {
             disabled={busy}
             onPress={() =>
               void handleSubmit(async (values) => {
+                clearErrors();
                 const parsed = registrationSchema.safeParse(values);
                 if (!parsed.success) {
                   for (const issue of parsed.error.issues) {
-                    setError(issue.path[0] as keyof CitizenRegistrationInput, {
-                      message: issue.message,
-                    });
+                    const key = issue.path[0] as
+                      | keyof CitizenRegistrationInput
+                      | undefined;
+                    if (key) {
+                      setError(key, {
+                        message: issue.message,
+                      });
+                    }
                   }
-                  setMessage("Revisa los campos indicados.");
+                  setMessage(
+                    "Por favor revisa y corrige los campos marcados arriba.",
+                  );
                   return;
                 }
                 await run(async () => {
@@ -176,16 +254,24 @@ export default function Auth() {
         <>
           <Field
             label="Correo electrónico"
+            placeholder="ejemplo@correo.com"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(v) => {
+              setEmail(v);
+              if (message) setMessage("");
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
           />
           <Field
             label="Contraseña"
+            placeholder="Ingresa tu contraseña"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(v) => {
+              setPassword(v);
+              if (message) setMessage("");
+            }}
             secureTextEntry
             autoCapitalize="none"
             autoComplete="current-password"
@@ -193,23 +279,37 @@ export default function Auth() {
           <Button
             title={busy ? "Ingresando…" : "Iniciar sesión"}
             disabled={busy}
-            onPress={() => void run(() => api.auth.login(email, password))}
+            onPress={() => {
+              if (!email.trim() || !password) {
+                setMessage(
+                  "Por favor ingresa tu correo electrónico y tu contraseña.",
+                );
+                return;
+              }
+              void run(() => api.auth.login(email.trim(), password));
+            }}
           />
           <Button
             secondary
             title="Recuperar contraseña"
-            onPress={() =>
-              void run(async () => {
-                await api.auth.reset(email, "tuxtlareporta://auth");
+            onPress={() => {
+              if (!email.trim()) {
                 setMessage(
-                  "Si existe una cuenta, recibirás un correo para recuperar el acceso.",
+                  "Escribe primero tu correo electrónico arriba para enviarte el enlace de recuperación.",
                 );
-              })
-            }
+                return;
+              }
+              void run(async () => {
+                await api.auth.reset(email.trim(), "tuxtlareporta://auth");
+                setMessage(
+                  "Si existe una cuenta con ese correo, recibirás un enlace para restablecer tu contraseña.",
+                );
+              });
+            }}
           />
         </>
       )}
-      {message && (
+      {Boolean(message) && (
         <Text accessibilityRole="alert" style={styles.error}>
           {message}
         </Text>
@@ -220,6 +320,7 @@ export default function Auth() {
         onPress={() => {
           setRegister(!register);
           setMessage("");
+          clearErrors();
         }}
       />
     </Screen>
