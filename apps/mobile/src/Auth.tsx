@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { AppState, Text, View } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { friendlyError } from "@tuxtla/shared";
 import { registrationSchema } from "@tuxtla/validation";
@@ -20,6 +20,8 @@ export default function Auth() {
     [password, setPassword] = useState(""),
     [ageInput, setAgeInput] = useState("18"),
     [message, setMessage] = useState(""),
+    [infoMessage, setInfoMessage] = useState(""),
+    [pendingConfirmEmail, setPendingConfirmEmail] = useState(""),
     [busy, setBusy] = useState(false);
   const {
     control,
@@ -40,9 +42,21 @@ export default function Auth() {
       privacy_consent: false,
     },
   });
+
+  useEffect(() => {
+    if (!pendingConfirmEmail || !email.trim() || !password) return;
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        void api.auth.login(email.trim(), password).catch(() => {});
+      }
+    });
+    return () => sub.remove();
+  }, [pendingConfirmEmail, email, password]);
+
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
     setMessage("");
+    setInfoMessage("");
     try {
       await action();
     } catch (error) {
@@ -243,8 +257,12 @@ export default function Auth() {
                   return;
                 }
                 await run(async () => {
-                  const result = await api.auth.register(parsed.data);
-                  setMessage(result.message);
+                  await api.auth.register(parsed.data);
+                  const cleanEmail = parsed.data.email.trim();
+                  setEmail(cleanEmail);
+                  setPassword(parsed.data.password);
+                  setPendingConfirmEmail(cleanEmail);
+                  setRegister(false);
                 });
               })()
             }
@@ -252,6 +270,55 @@ export default function Auth() {
         </>
       ) : (
         <>
+          {Boolean(pendingConfirmEmail) && (
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: "rgba(16, 185, 129, 0.14)",
+                  borderColor: "rgba(16, 185, 129, 0.55)",
+                  borderWidth: 1.5,
+                  gap: 8,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "800",
+                  color: "#10b981",
+                }}
+              >
+                ¡Cuenta creada! Confirma tu correo para entrar
+              </Text>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: "#e2e8f0",
+                  lineHeight: 19,
+                }}
+              >
+                1. Abre el correo electrónico enviado a{" "}
+                <Text style={{ fontWeight: "800", color: "#38bdf8" }}>
+                  {pendingConfirmEmail}
+                </Text>{" "}
+                y pulsa en confirmar cuenta.
+              </Text>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: "#e2e8f0",
+                  lineHeight: 19,
+                }}
+              >
+                2. Una vez confirmado tu correo, pulsa{" "}
+                <Text style={{ fontWeight: "800", color: "#10b981" }}>
+                  Ya confirmé mi correo · Iniciar sesión
+                </Text>{" "}
+                aquí abajo (tu correo y contraseña ya están listos).
+              </Text>
+            </View>
+          )}
           <Field
             label="Correo electrónico"
             placeholder="ejemplo@correo.com"
@@ -259,6 +326,7 @@ export default function Auth() {
             onChangeText={(v) => {
               setEmail(v);
               if (message) setMessage("");
+              if (infoMessage) setInfoMessage("");
             }}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -271,13 +339,20 @@ export default function Auth() {
             onChangeText={(v) => {
               setPassword(v);
               if (message) setMessage("");
+              if (infoMessage) setInfoMessage("");
             }}
             secureTextEntry
             autoCapitalize="none"
             autoComplete="current-password"
           />
           <Button
-            title={busy ? "Ingresando…" : "Iniciar sesión"}
+            title={
+              busy
+                ? "Ingresando…"
+                : pendingConfirmEmail
+                  ? "Ya confirmé mi correo · Iniciar sesión"
+                  : "Iniciar sesión"
+            }
             disabled={busy}
             onPress={() => {
               if (!email.trim() || !password) {
@@ -301,13 +376,28 @@ export default function Auth() {
               }
               void run(async () => {
                 await api.auth.reset(email.trim(), "tuxtlareporta://auth");
-                setMessage(
+                setInfoMessage(
                   "Si existe una cuenta con ese correo, recibirás un enlace para restablecer tu contraseña.",
                 );
               });
             }}
           />
         </>
+      )}
+      {Boolean(infoMessage) && (
+        <View
+          style={{
+            padding: 14,
+            backgroundColor: "rgba(16, 185, 129, 0.14)",
+            borderWidth: 1,
+            borderColor: "rgba(16, 185, 129, 0.45)",
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ color: "#6ee7b7", fontSize: 13, fontWeight: "600" }}>
+            {infoMessage}
+          </Text>
+        </View>
       )}
       {Boolean(message) && (
         <Text accessibilityRole="alert" style={styles.error}>
@@ -320,6 +410,8 @@ export default function Auth() {
         onPress={() => {
           setRegister(!register);
           setMessage("");
+          setInfoMessage("");
+          setPendingConfirmEmail("");
           clearErrors();
         }}
       />

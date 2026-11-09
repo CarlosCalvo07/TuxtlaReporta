@@ -125,19 +125,18 @@ function Login() {
           </label>
           <label>
             Contraseña
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div className="password-field-wrap">
               <input
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ flex: 1 }}
+                placeholder="Ingresa tu contraseña"
               />
               <button
                 type="button"
-                className="secondary"
-                style={{ padding: "10px 14px", whiteSpace: "nowrap" }}
+                className="password-toggle-btn"
                 onClick={() => setShowPassword((v) => !v)}
               >
                 {showPassword ? "Ocultar" : "Mostrar"}
@@ -145,9 +144,27 @@ function Login() {
             </div>
           </label>
           {(message || session.message) && (
-            <p role="alert" className="notice">
-              {message || session.message}
-            </p>
+            <div
+              role="alert"
+              className={
+                !message &&
+                session.message ===
+                  "Tu acceso ciudadano está disponible en la aplicación móvil."
+                  ? "notice success"
+                  : "notice"
+              }
+            >
+              <p style={{ margin: 0, color: "inherit", fontWeight: 700 }}>
+                {message || session.message}
+              </p>
+              {!message &&
+                session.message ===
+                  "Tu acceso ciudadano está disponible en la aplicación móvil." && (
+                  <p style={{ margin: "6px 0 0 0", color: "inherit", fontSize: 12.5 }}>
+                    Si acabas de confirmar tu correo electrónico, tu cuenta ya quedó activada. Abre la aplicación móvil Tuxtla Reporta y pulsa Iniciar sesión.
+                  </p>
+                )}
+            </div>
           )}
           <button disabled={busy}>
             {busy ? "Verificando…" : "Entrar al panel →"}
@@ -198,7 +215,7 @@ function Recovery() {
       >
         <label>
           Nueva contraseña
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div className="password-field-wrap">
             <input
               type={showPassword ? "text" : "password"}
               minLength={12}
@@ -207,12 +224,11 @@ function Recovery() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{ flex: 1 }}
+              placeholder="Mínimo 12 caracteres"
             />
             <button
               type="button"
-              className="secondary"
-              style={{ padding: "10px 14px", whiteSpace: "nowrap" }}
+              className="password-toggle-btn"
               onClick={() => setShowPassword((v) => !v)}
             >
               {showPassword ? "Ocultar" : "Mostrar"}

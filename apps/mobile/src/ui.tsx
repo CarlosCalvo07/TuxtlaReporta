@@ -479,29 +479,6 @@ export function Button({
 
 const MASK_DOT = "•";
 
-function applyMaskedPasswordChange(prevReal: string, nextMasked: string): string {
-  if (nextMasked === MASK_DOT.repeat(prevReal.length)) return prevReal;
-  let prefixLen = 0;
-  const minLen = Math.min(prevReal.length, nextMasked.length);
-  while (prefixLen < minLen && nextMasked[prefixLen] === MASK_DOT) {
-    prefixLen++;
-  }
-  let suffixLen = 0;
-  while (
-    suffixLen < prevReal.length - prefixLen &&
-    suffixLen < nextMasked.length - prefixLen &&
-    nextMasked[nextMasked.length - 1 - suffixLen] === MASK_DOT
-  ) {
-    suffixLen++;
-  }
-  const inserted = nextMasked.slice(prefixLen, nextMasked.length - suffixLen);
-  return (
-    prevReal.slice(0, prefixLen) +
-    inserted +
-    prevReal.slice(prevReal.length - suffixLen)
-  );
-}
-
 export function PasswordRequirements({
   value,
   minLength = 12,
@@ -620,12 +597,10 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
   const { colors, mode } = useTheme();
   const isPassword = Boolean(props.secureTextEntry);
   const [showPassword, setShowPassword] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   if (isPassword) {
     const realValue = typeof props.value === "string" ? props.value : "";
-    const displayedValue = showPassword
-      ? realValue
-      : MASK_DOT.repeat(realValue.length);
 
     return (
       <View>
@@ -635,39 +610,95 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
             styles.input,
             {
               backgroundColor: colors.inputBg,
-              borderColor: colors.inputBorder,
+              borderColor: focused ? "#3b82f6" : colors.inputBorder,
               paddingVertical: 0,
+              paddingLeft: 13,
               paddingRight: 8,
               flexDirection: "row",
               alignItems: "center",
+              position: "relative",
             },
           ]}
         >
+          {!showPassword && (
+            <View
+              pointerEvents="none"
+              style={{
+                position: "absolute",
+                left: 13,
+                right: 92,
+                top: 0,
+                bottom: 0,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              {realValue.length > 0 ? (
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: colors.text,
+                    fontSize: 16,
+                    letterSpacing: 2.5,
+                    fontWeight: "700",
+                  }}
+                >
+                  {MASK_DOT.repeat(realValue.length)}
+                </Text>
+              ) : (
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: colors.textMuted,
+                    fontSize: 15,
+                  }}
+                >
+                  {props.placeholder ?? ""}
+                </Text>
+              )}
+              {focused && (
+                <View
+                  style={{
+                    width: 2,
+                    height: 18,
+                    backgroundColor: "#3b82f6",
+                    marginLeft: realValue.length > 0 ? 2 : 0,
+                  }}
+                />
+              )}
+            </View>
+          )}
           <TextInput
             accessibilityLabel={label}
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={
+              showPassword ? colors.textMuted : "transparent"
+            }
             {...props}
             secureTextEntry={false}
             autoCorrect={false}
             spellCheck={false}
             autoCapitalize="none"
+            autoComplete="off"
+            importantForAutofill="no"
             contextMenuHidden={!showPassword}
-            value={displayedValue}
-            onChangeText={(text) => {
-              if (!props.onChangeText) return;
-              if (showPassword) {
-                props.onChangeText(text);
-              } else {
-                props.onChangeText(applyMaskedPasswordChange(realValue, text));
-              }
+            caretHidden={!showPassword}
+            value={realValue}
+            onFocus={(e) => {
+              setFocused(true);
+              props.onFocus?.(e);
             }}
+            onBlur={(e) => {
+              setFocused(false);
+              props.onBlur?.(e);
+            }}
+            onChangeText={props.onChangeText}
             style={[
               {
                 flex: 1,
-                color: colors.text,
+                color: showPassword ? colors.text : "transparent",
                 fontSize: 15,
                 paddingVertical: 12,
-                letterSpacing: !showPassword && realValue.length > 0 ? 2 : 0,
+                minHeight: 46,
               },
               props.style,
             ]}
@@ -680,19 +711,20 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             onPress={() => setShowPassword((prev) => !prev)}
             style={({ pressed }) => ({
-              paddingHorizontal: 10,
-              paddingVertical: 6,
+              paddingHorizontal: 11,
+              paddingVertical: 7,
               borderRadius: 6,
               backgroundColor:
                 mode === "dark"
-                  ? "rgba(59, 130, 246, 0.16)"
+                  ? "rgba(59, 130, 246, 0.18)"
                   : "rgba(30, 64, 175, 0.1)",
               borderWidth: 1,
               borderColor:
                 mode === "dark"
-                  ? "rgba(59, 130, 246, 0.35)"
+                  ? "rgba(59, 130, 246, 0.4)"
                   : "rgba(30, 64, 175, 0.25)",
               opacity: pressed ? 0.75 : 1,
+              marginLeft: 6,
             })}
           >
             <Text

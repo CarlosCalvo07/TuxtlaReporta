@@ -535,6 +535,7 @@ export type Database = {
         Returns: Json;
       };
       register_device: { Args: { token: string }; Returns: undefined };
+      delete_my_account: { Args: Record<string, never>; Returns: undefined };
       provision_citizen: {
         Args: { uid: string; data: Json; curp_hash: string };
         Returns: undefined;

@@ -24,7 +24,6 @@ import {
   friendlyError,
   dateLabel,
   getCategoryHeatStyle,
-  DEFAULT_CLUSTER_RADIUS_M,
 } from "@tuxtla/shared";
 import { statusLabels } from "@tuxtla/types";
 import { api, client } from "./backend";
@@ -50,6 +49,7 @@ export default function Citizen() {
   const [reportSearch, setReportSearch] = useState("");
   const [pushStatusMessage, setPushStatusMessage] = useState("");
   const [pushRegistering, setPushRegistering] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Consulta de perfil de usuario
   const userProfile = useQuery({
@@ -282,6 +282,38 @@ export default function Citizen() {
     );
   }
 
+  function handleDeleteAccount() {
+    Alert.alert(
+      "Eliminar cuenta permanentemente",
+      "¿Estás seguro de que deseas eliminar tu cuenta ciudadana y todos tus datos registrados? Esta acción es permanente y no se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar cuenta",
+          style: "destructive",
+          onPress: () => {
+            setDeletingAccount(true);
+            void api.auth
+              .deleteAccount()
+              .then(() => {
+                cache.clear();
+                Alert.alert(
+                  "Cuenta eliminada",
+                  "Tu cuenta ha sido eliminada correctamente.",
+                );
+              })
+              .catch((err) => {
+                Alert.alert("Error", friendlyError(err));
+              })
+              .finally(() => {
+                setDeletingAccount(false);
+              });
+          },
+        },
+      ],
+    );
+  }
+
   async function handleRegisterPush() {
     try {
       setPushRegistering(true);
@@ -414,37 +446,6 @@ export default function Citizen() {
               value={category}
               onChange={setCategory}
             />
-            {Boolean(category) && (() => {
-              const selectedCat = categories.data?.find((c) => c.id === category);
-              const catStyle = getCategoryHeatStyle(selectedCat?.slug ?? selectedCat?.name);
-              return (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: 10,
-                    borderRadius: 8,
-                    backgroundColor: catStyle.badgeBg,
-                    borderWidth: 1,
-                    borderColor: catStyle.badgeBorder,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 5,
-                      backgroundColor: catStyle.color,
-                    }}
-                  />
-                  <Text style={{ fontSize: 12, color: colors.text, flex: 1, lineHeight: 17 }}>
-                    <Text style={{ fontWeight: "700" }}>{selectedCat?.name ?? catStyle.label}:</Text>{" "}
-                    Recibirás tu propio folio oficial. Si otros vecinos reportan esta misma incidencia en un rango corto (≤{DEFAULT_CLUSTER_RADIUS_M}m), se agruparán automáticamente en el mapa de calor municipal para aumentar su prioridad.
-                  </Text>
-                </View>
-              );
-            })()}
             <View>
               <Field
                 label="Descripción (20 a 2000 caracteres)"
@@ -1302,18 +1303,24 @@ export default function Citizen() {
             </View>
           </View>
 
-          {/* Cerrar sesión */}
+          {/* Cerrar sesión y Eliminar cuenta */}
           <View style={[styles.card, { borderColor: "rgba(220, 38, 38, 0.3)" }]}>
-            <Text style={[styles.heading, { color: "#ef4444" }]}>
-              Sesión activa
+            <Text style={[styles.heading, { color: colors.text }]}>
+              Cuenta y sesión
             </Text>
             <Text style={styles.small}>
-              Si cierras sesión deberás volver a ingresar con tu correo y contraseña.
+              Puedes cerrar tu sesión actual o eliminar permanentemente tu cuenta ciudadana.
             </Text>
+            <Button
+              secondary
+              title="Cerrar sesión"
+              onPress={handleLogout}
+            />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Cerrar sesión"
-              onPress={handleLogout}
+              accessibilityLabel="Eliminar cuenta"
+              disabled={deletingAccount}
+              onPress={handleDeleteAccount}
               style={({ pressed }) => [
                 {
                   backgroundColor: pressed
@@ -1325,7 +1332,8 @@ export default function Citizen() {
                   paddingVertical: 14,
                   alignItems: "center",
                   justifyContent: "center",
-                  marginTop: 6,
+                  marginTop: 4,
+                  opacity: deletingAccount ? 0.5 : 1,
                 },
               ]}
             >
@@ -1337,7 +1345,7 @@ export default function Citizen() {
                   letterSpacing: 0.3,
                 }}
               >
-                Cerrar sesión
+                {deletingAccount ? "Eliminando cuenta…" : "Eliminar cuenta"}
               </Text>
             </Pressable>
           </View>

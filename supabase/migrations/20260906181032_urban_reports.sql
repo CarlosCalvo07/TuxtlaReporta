@@ -361,6 +361,31 @@ begin if private.my_role() is null or token !~ '^ExponentPushToken\[[A-Za-z0-9_-
  insert into private.device_tokens(user_id,token) values(auth.uid(),token) on conflict(token) do update set user_id=excluded.user_id;
 end$$;
 create function public.register_device(token text) returns void language sql security invoker set search_path='' as $$select private.register_device(token)$$;
+create function private.delete_my_account() returns void language plpgsql security definer set search_path='' as $$
+declare uid uuid:=auth.uid(); my_r public.app_role;
+begin
+ if uid is null then raise exception 'UNAUTHORIZED' using errcode='42501'; end if;
+ select r.role into my_r from public.user_roles r where r.user_id=uid;
+ if my_r='admin' then raise exception 'ADMIN_DELETE_FORBIDDEN' using errcode='42501'; end if;
+ set local storage.allow_delete_query='true';
+ delete from storage.objects where bucket_id='report-media' and (owner=uid or name like 'uploads/'||uid::text||'/%' or name in (select storage_path from public.report_media where uploaded_by=uid or report_id in (select id from public.reports where citizen_id=uid)));
+ delete from private.push_outbox where notification_id in (select id from public.notifications where user_id=uid or report_id in (select id from public.reports where citizen_id=uid));
+ delete from public.notifications where user_id=uid or report_id in (select id from public.reports where citizen_id=uid);
+ delete from private.device_tokens where user_id=uid;
+ delete from public.report_notes where author_id=uid or report_id in (select id from public.reports where citizen_id=uid);
+ delete from public.report_status_history where changed_by=uid or report_id in (select id from public.reports where citizen_id=uid);
+ delete from public.report_media where uploaded_by=uid or report_id in (select id from public.reports where citizen_id=uid);
+ delete from public.report_assignments where maintenance_user_id=uid or assigned_by=uid or report_id in (select id from public.reports where citizen_id=uid);
+ delete from public.reports where citizen_id=uid;
+ delete from public.audit_log where actor_user_id=uid;
+ delete from public.maintenance_user_areas where user_id=uid or created_by=uid;
+ delete from private.citizen_profiles where user_id=uid;
+ delete from public.user_roles where user_id=uid or created_by=uid;
+ delete from public.profiles where id=uid;
+ delete from auth.users where id=uid;
+end$$;
+create function public.delete_my_account() returns void language sql security invoker set search_path='' as $$select private.delete_my_account()$$;
+grant execute on function private.delete_my_account(),public.delete_my_account() to authenticated;
 
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('report-media','report-media',false,8388608,array['image/jpeg','image/png','image/webp']);
 create policy report_objects_read on storage.objects for select to authenticated using (bucket_id='report-media' and exists(select 1 from public.report_media m where m.storage_path=name and private.can_read_report(m.report_id)));

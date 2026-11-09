@@ -1108,6 +1108,57 @@ export default function Operations() {
             title="Cerrar sesión"
             onPress={handleLogout}
           />
+          {s.role !== "admin" && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Eliminar cuenta"
+              onPress={() => {
+                Alert.alert(
+                  "Eliminar cuenta permanentemente",
+                  "¿Estás seguro de que deseas eliminar tu cuenta? Esta acción es permanente y no se puede deshacer.",
+                  [
+                    { text: "Cancelar", style: "cancel" },
+                    {
+                      text: "Eliminar cuenta",
+                      style: "destructive",
+                      onPress: () => {
+                        void api.auth
+                          .deleteAccount()
+                          .then(() => cache.clear())
+                          .catch((err) =>
+                            Alert.alert("Error", friendlyError(err)),
+                          );
+                      },
+                    },
+                  ],
+                );
+              }}
+              style={({ pressed }) => [
+                {
+                  backgroundColor: pressed
+                    ? "rgba(220, 38, 38, 0.25)"
+                    : "rgba(220, 38, 38, 0.12)",
+                  borderColor: "#dc2626",
+                  borderWidth: 1.5,
+                  borderRadius: 10,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                  justifyContent: "center",
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  color: "#ef4444",
+                  fontSize: 15,
+                  fontWeight: "800",
+                  letterSpacing: 0.3,
+                }}
+              >
+                Eliminar cuenta
+              </Text>
+            </Pressable>
+          )}
         </Screen>
       )}
 

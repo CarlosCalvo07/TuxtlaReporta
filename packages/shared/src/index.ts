@@ -111,6 +111,8 @@ export function friendlyError(error: unknown): string {
     return "Permiso de cámara o galería denegado. Habilítalo en los ajustes de tu dispositivo.";
   if (message.includes("ACTIVE_ASSIGNMENTS"))
     return "Reasigna los trabajos activos antes de cambiar el área o desactivar al responsable.";
+  if (message.includes("ADMIN_DELETE_FORBIDDEN"))
+    return "La cuenta de administración principal no puede eliminarse desde este apartado.";
   if (message.includes("Failed to fetch") || message.includes("Network"))
     return "No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.";
   if (error instanceof AppError && message) return message;
@@ -521,6 +523,10 @@ export function services(client: Client) {
           "register-citizen",
           registrationSchema.parse(data),
         ),
+      deleteAccount: async () => {
+        checked(await client.rpc("delete_my_account"));
+        await client.auth.signOut().catch(() => {});
+      },
     },
     reports: {
       list: async (filters: ReportFilters = {}) => {
