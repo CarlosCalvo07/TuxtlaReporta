@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api } from "../backend";
-import { Badge, ErrorNotice, Map } from "../components";
-import { dateLabel } from "@tuxtla/shared";
+import { Badge, CategoryBadge, ErrorNotice, Map } from "../components";
+import { dateLabel, getCategoryHeatStyle } from "@tuxtla/shared";
 import type { Json } from "@tuxtla/types";
 export default function Dashboard() {
   const cache = useQueryClient();
@@ -16,6 +16,10 @@ export default function Dashboard() {
   const [bounds, setBounds] = useState<[number, number, number, number]>([
     -93.2, 16.7, -93.05, 16.8,
   ]);
+  const categories = useQuery({
+    queryKey: ["categories"],
+    queryFn: api.catalogs.categories,
+  });
   const metrics = useQuery({
     queryKey: ["metrics", since, until],
     queryFn: () =>
@@ -98,12 +102,18 @@ export default function Dashboard() {
         <section className="panel">
           <div className="panel-title">
             <div>
-              <h2>Incidencias en el territorio</h2>
-              <p>Reportes en el área visible · hasta 500 puntos</p>
+              <h2>Mapa de calor de incidencias</h2>
+              <p>
+                Agrupación automática en rango corto por tipo de incidencia · hasta 500 puntos
+              </p>
             </div>
             <span className="chip">Tuxtla Gutiérrez</span>
           </div>
-          <Map reports={map.data ?? []} onBounds={setBounds} />
+          <Map
+            reports={map.data ?? []}
+            categories={categories.data}
+            onBounds={setBounds}
+          />
         </section>
         <section className="panel">
           <h2>Atención en cifras</h2>
@@ -136,13 +146,23 @@ export default function Dashboard() {
                 : "—"}
             </strong>
           </div>
-          <h3>Por categoría</h3>
+          <h3>Por categoría (color en mapa de calor)</h3>
           {Array.isArray(m?.categories) &&
             m.categories.map((item, i) => {
               const row = item as { name: string; total: number };
+              const style = getCategoryHeatStyle(row.name);
               return (
                 <div className="metric-line" key={i}>
-                  <span>{row.name}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                    <span
+                      className="category-heat-dot"
+                      style={{
+                        backgroundColor: style.color,
+                        boxShadow: `0 0 8px ${style.color}`,
+                      }}
+                    />
+                    {row.name}
+                  </span>
                   <strong>{row.total}</strong>
                 </div>
               );
@@ -204,6 +224,7 @@ export default function Dashboard() {
             <thead>
               <tr>
                 <th>Folio</th>
+                <th>Categoría</th>
                 <th>Descripción</th>
                 <th>Fecha</th>
                 <th>Estado</th>
@@ -211,19 +232,25 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {recent.data?.rows.slice(0, 6).map((r) => (
-                <tr key={r.id}>
-                  <td className="folio">{r.folio}</td>
-                  <td className="truncate">{r.description}</td>
-                  <td>{dateLabel(r.created_at)}</td>
-                  <td>
-                    <Badge status={r.status} />
-                  </td>
-                  <td>
-                    <Link to={`/reports/${r.id}`}>Abrir ↗</Link>
-                  </td>
-                </tr>
-              ))}
+              {recent.data?.rows.slice(0, 6).map((r) => {
+                const cat = categories.data?.find((c) => c.id === r.category_id);
+                return (
+                  <tr key={r.id}>
+                    <td className="folio">{r.folio}</td>
+                    <td>
+                      <CategoryBadge name={cat?.name} slug={cat?.slug} />
+                    </td>
+                    <td className="truncate">{r.description}</td>
+                    <td>{dateLabel(r.created_at)}</td>
+                    <td>
+                      <Badge status={r.status} />
+                    </td>
+                    <td>
+                      <Link to={`/reports/${r.id}`}>Abrir ↗</Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

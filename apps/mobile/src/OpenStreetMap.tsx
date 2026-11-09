@@ -2,25 +2,45 @@ import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { WebView } from "react-native-webview";
 
+export interface MobileHeatClusterItem {
+  id: string;
+  latitude: number;
+  longitude: number;
+  count: number;
+  color: string;
+  haloInner: string;
+  haloOuter: string;
+  label: string;
+  folio: string;
+}
+
 interface OpenStreetMapProps {
-  point: { latitude: number; longitude: number } | null;
+  point?: { latitude: number; longitude: number } | null;
   onSelectPoint?: (coords: { latitude: number; longitude: number }) => void;
+  clusters?: MobileHeatClusterItem[];
+  radiusMeters?: number;
+  onSelectCluster?: (reportId: string) => void;
   height?: number;
   isDark?: boolean;
   interactive?: boolean;
 }
 
 export function OpenStreetMap({
-  point,
+  point = null,
   onSelectPoint,
+  clusters,
+  radiusMeters = 45,
+  onSelectCluster,
   height = 280,
   isDark = true,
-  interactive = Boolean(onSelectPoint),
+  interactive = Boolean(onSelectPoint) || Boolean(clusters?.length),
 }: OpenStreetMapProps) {
   const webViewRef = useRef<any>(null);
-  const initialLat = point?.latitude ?? 16.753;
-  const initialLng = point?.longitude ?? -93.116;
+  const firstCluster = clusters?.[0];
+  const initialLat = point?.latitude ?? firstCluster?.latitude ?? 16.753;
+  const initialLng = point?.longitude ?? firstCluster?.longitude ?? -93.116;
   const hasPoint = Boolean(point);
+  const hasClusters = Boolean(clusters && clusters.length > 0);
 
   // Synchronize point changes from outside (GPS button, zone buttons) into the map
   useEffect(() => {
@@ -29,6 +49,8 @@ export function OpenStreetMap({
       webViewRef.current.injectJavaScript(script);
     }
   }, [point?.latitude, point?.longitude]);
+
+  const clustersJson = JSON.stringify(clusters ?? []);
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -39,7 +61,7 @@ export function OpenStreetMap({
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body, #map { width: 100%; height: 100%; background: #070e1c; }
+    html, body, #map { width: 100%; height: 100%; background: #070e1c; font-family: system-ui, -apple-system, sans-serif; }
     ${
       isDark
         ? `
@@ -61,6 +83,34 @@ export function OpenStreetMap({
       color: #00d2ee !important;
       border: 1px solid rgba(0, 210, 238, 0.3) !important;
     }
+    .heat-icon {
+      background: transparent !important;
+      border: none !important;
+    }
+    .heat-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .heat-aura {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .heat-core {
+      position: relative;
+      z-index: 2;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 10px;
+      border: 2px solid #ffffff;
+    }
   </style>
 </head>
 <body>
@@ -70,23 +120,26 @@ export function OpenStreetMap({
     var map = L.map('map', {
       zoomControl: true,
       attributionControl: false
-    }).setView([${initialLat}, ${initialLng}], ${hasPoint ? 16 : 14});
+    }).setView([${initialLat}, ${initialLng}], ${hasPoint ? 16 : hasClusters ? 13 : 14});
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19
     }).addTo(map);
 
     var marker = null;
-    var isInteractive = ${interactive ? "true" : "false"};
+    var isPointInteractive = ${Boolean(onSelectPoint) ? "true" : "false"};
+    var clusters = ${clustersJson};
+    var radiusMeters = ${radiusMeters};
 
     function setMarker(lat, lng, pan) {
       if (!marker) {
-        marker = L.marker([lat, lng], { draggable: isInteractive }).addTo(map);
-        if (isInteractive) {
+        marker = L.marker([lat, lng], { draggable: isPointInteractive }).addTo(map);
+        if (isPointInteractive) {
           marker.on('dragend', function() {
             var pos = marker.getLatLng();
             if (window.ReactNativeWebView) {
               window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'point',
                 latitude: pos.lat,
                 longitude: pos.lng
               }));
@@ -103,11 +156,58 @@ export function OpenStreetMap({
 
     ${hasPoint ? `setMarker(${initialLat}, ${initialLng}, false);` : ""}
 
-    if (isInteractive) {
+    if (clusters && clusters.length > 0) {
+      var bounds = [];
+      for (var i = 0; i < clusters.length; i++) {
+        (function(c) {
+          bounds.push([c.latitude, c.longitude]);
+          L.circle([c.latitude, c.longitude], {
+            radius: radiusMeters,
+            color: c.color,
+            weight: c.count > 1 ? 1.5 : 1,
+            dashArray: c.count > 1 ? '4 4' : null,
+            fillColor: c.color,
+            fillOpacity: Math.min(0.16 + (c.count - 1) * 0.06, 0.38),
+            interactive: false
+          }).addTo(map);
+
+          var outerSize = c.count >= 5 ? 74 : c.count >= 3 ? 60 : c.count === 2 ? 48 : 34;
+          var coreSize = c.count > 1 ? 24 : 14;
+          var html = '<div class="heat-wrap" style="width:' + outerSize + 'px;height:' + outerSize + 'px;">' +
+            '<div class="heat-aura" style="width:' + outerSize + 'px;height:' + outerSize + 'px;background:radial-gradient(circle,' + c.haloInner + ' 0%,' + c.haloOuter + ' 52%,rgba(0,0,0,0) 75%);"></div>' +
+            '<div class="heat-core" style="width:' + coreSize + 'px;height:' + coreSize + 'px;background:' + c.color + ';box-shadow:0 0 10px ' + c.color + ';">' +
+            (c.count > 1 ? '×' + c.count : '') +
+            '</div></div>';
+
+          var icon = L.divIcon({
+            className: 'heat-icon',
+            html: html,
+            iconSize: [outerSize, outerSize],
+            iconAnchor: [outerSize / 2, outerSize / 2]
+          });
+
+          var m = L.marker([c.latitude, c.longitude], { icon: icon }).addTo(map);
+          m.on('click', function() {
+            if (window.ReactNativeWebView) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'cluster',
+                id: c.id
+              }));
+            }
+          });
+        })(clusters[i]);
+      }
+      if (!${hasPoint ? "true" : "false"} && bounds.length > 1) {
+        map.fitBounds(bounds, { padding: [28, 28], maxZoom: 16 });
+      }
+    }
+
+    if (isPointInteractive) {
       map.on('click', function(e) {
         setMarker(e.latlng.lat, e.latlng.lng, false);
         if (window.ReactNativeWebView) {
           window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'point',
             latitude: e.latlng.lat,
             longitude: e.latlng.lng
           }));
@@ -138,9 +238,13 @@ export function OpenStreetMap({
         startInLoadingState
         onMessage={(event: any) => {
           try {
-            if (!onSelectPoint) return;
             const data = JSON.parse(event.nativeEvent.data);
+            if (data.type === "cluster" && typeof data.id === "string") {
+              onSelectCluster?.(data.id);
+              return;
+            }
             if (
+              onSelectPoint &&
               typeof data.latitude === "number" &&
               typeof data.longitude === "number"
             ) {

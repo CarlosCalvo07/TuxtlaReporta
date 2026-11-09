@@ -44,13 +44,309 @@ export function friendlyError(error: unknown): string {
     return "El reporte cambió. Actualiza la vista e inténtalo nuevamente.";
   if (message.includes("AREA_MISMATCH"))
     return "El responsable debe pertenecer al área del reporte.";
+  if (message.includes("ASSIGNMENT_REQUIRED"))
+    return "Primero debes asignar un responsable de mantenimiento antes de pasar a En atención.";
   if (message.includes("RESOLUTION_REQUIRED"))
     return "Añade evidencia final y una nota de resolución de al menos 5 caracteres.";
+  if (message.includes("INVALID_TRANSITION"))
+    return "No es posible cambiar a ese estado directamente. Revisa el estado actual del reporte.";
+  if (message.includes("INVALID_MEDIA"))
+    return "No se pudo validar la fotografía subida. Intenta adjuntarla nuevamente.";
+  if (message.includes("MEDIA_LIMIT"))
+    return "Se alcanzó el límite máximo de fotografías permitidas para este reporte.";
+  if (message.includes("PHOTO_REQUIRED"))
+    return "Debes adjuntar entre 1 y 5 fotografías de evidencia.";
+  if (message.includes("Camera permission"))
+    return "Permiso de cámara o galería denegado. Habilítalo en los ajustes de tu dispositivo.";
   if (message.includes("ACTIVE_ASSIGNMENTS"))
     return "Reasigna los trabajos activos antes de cambiar el área o desactivar al responsable.";
   if (message.includes("Failed to fetch") || message.includes("Network"))
     return "No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.";
   return "No se pudo completar la operación. Revisa tus permisos o vuelve a intentarlo.";
+}
+
+export const DEFAULT_CLUSTER_RADIUS_M = 45;
+
+export type CategoryHeatStyle = {
+  key: "bache" | "basura" | "alumbrado" | "agua" | "otra";
+  label: string;
+  emoji: string;
+  color: string;
+  darkColor: string;
+  haloInner: string;
+  haloOuter: string;
+  badgeBg: string;
+  badgeBorder: string;
+};
+
+const CATEGORY_HEAT_STYLES: Record<CategoryHeatStyle["key"], CategoryHeatStyle> = {
+  bache: {
+    key: "bache",
+    label: "Bache / Vialidad",
+    emoji: "🕳️",
+    color: "#ef4444",
+    darkColor: "#b91c1c",
+    haloInner: "rgba(239, 68, 68, 0.45)",
+    haloOuter: "rgba(249, 115, 22, 0.20)",
+    badgeBg: "rgba(239, 68, 68, 0.15)",
+    badgeBorder: "rgba(239, 68, 68, 0.45)",
+  },
+  alumbrado: {
+    key: "alumbrado",
+    label: "Alumbrado público",
+    emoji: "💡",
+    color: "#f59e0b",
+    darkColor: "#b45309",
+    haloInner: "rgba(245, 158, 11, 0.48)",
+    haloOuter: "rgba(250, 204, 21, 0.22)",
+    badgeBg: "rgba(245, 158, 11, 0.16)",
+    badgeBorder: "rgba(245, 158, 11, 0.48)",
+  },
+  basura: {
+    key: "basura",
+    label: "Basura / Limpia",
+    emoji: "🗑️",
+    color: "#10b981",
+    darkColor: "#047857",
+    haloInner: "rgba(16, 185, 129, 0.45)",
+    haloOuter: "rgba(52, 211, 153, 0.20)",
+    badgeBg: "rgba(16, 185, 129, 0.15)",
+    badgeBorder: "rgba(16, 185, 129, 0.45)",
+  },
+  agua: {
+    key: "agua",
+    label: "Agua / Drenaje",
+    emoji: "💧",
+    color: "#06b6d4",
+    darkColor: "#0e7490",
+    haloInner: "rgba(6, 182, 212, 0.45)",
+    haloOuter: "rgba(56, 189, 248, 0.20)",
+    badgeBg: "rgba(6, 182, 212, 0.15)",
+    badgeBorder: "rgba(6, 182, 212, 0.45)",
+  },
+  otra: {
+    key: "otra",
+    label: "Otra incidencia",
+    emoji: "📍",
+    color: "#a855f7",
+    darkColor: "#6b21a8",
+    haloInner: "rgba(168, 85, 247, 0.45)",
+    haloOuter: "rgba(192, 132, 252, 0.20)",
+    badgeBg: "rgba(168, 85, 247, 0.15)",
+    badgeBorder: "rgba(168, 85, 247, 0.45)",
+  },
+};
+
+export function getCategoryHeatStyle(slugOrName?: string | null): CategoryHeatStyle {
+  const raw = (slugOrName ?? "").toLowerCase();
+  if (raw.includes("bache") || raw.includes("pavimento") || raw.includes("vial")) {
+    return CATEGORY_HEAT_STYLES.bache;
+  }
+  if (raw.includes("alumbrado") || raw.includes("luminaria") || raw.includes("luz")) {
+    return CATEGORY_HEAT_STYLES.alumbrado;
+  }
+  if (raw.includes("basura") || raw.includes("residuo") || raw.includes("limpia")) {
+    return CATEGORY_HEAT_STYLES.basura;
+  }
+  if (raw.includes("agua") || raw.includes("fuga") || raw.includes("drenaje") || raw.includes("alcantarilla")) {
+    return CATEGORY_HEAT_STYLES.agua;
+  }
+  return CATEGORY_HEAT_STYLES.otra;
+}
+
+export function distanceMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+export type ClusterableReport = {
+  id: string;
+  folio: string;
+  latitude: number;
+  longitude: number;
+  category_id?: string | null;
+  status?: ReportStatus;
+  priority?: ReportPriority;
+  description?: string;
+  neighborhood?: string | null;
+  created_at?: string;
+};
+
+export type IncidentCluster<T extends ClusterableReport = ClusterableReport> = {
+  id: string;
+  primary: T;
+  reports: T[];
+  count: number;
+  duplicateCount: number;
+  category_id: string;
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+  heatLevel: "normal" | "medio" | "alto" | "critico";
+};
+
+const priorityWeight: Record<ReportPriority, number> = {
+  baja: 1,
+  media: 2,
+  alta: 3,
+  urgente: 4,
+};
+
+const statusWeight: Record<ReportStatus, number> = {
+  en_atencion: 4,
+  en_revision: 3,
+  recibido: 2,
+  solucionado: 1,
+};
+
+/**
+ * Agrupa reportes cercanos (rango corto en metros) que pertenezcan
+ * exactamente a la misma categoría de incidencia (ej. bache solo con bache,
+ * basura solo con basura, alumbrado solo con alumbrado).
+ */
+export function clusterReportsByCategory<T extends ClusterableReport>(
+  reports: T[],
+  radiusMeters: number = DEFAULT_CLUSTER_RADIUS_M,
+): IncidentCluster<T>[] {
+  const visited = new Set<string>();
+  const clusters: IncidentCluster<T>[] = [];
+
+  for (let i = 0; i < reports.length; i++) {
+    const seed = reports[i]!;
+    if (visited.has(seed.id)) continue;
+    visited.add(seed.id);
+
+    const catId = seed.category_id ?? "unknown";
+    const seedSolved = seed.status === "solucionado";
+    const group: T[] = [seed];
+
+    // Búsqueda transitiva de vecinos cercanos de la MISMA categoría
+    let added = true;
+    while (added) {
+      added = false;
+      const centroidLat =
+        group.reduce((sum, item) => sum + item.latitude, 0) / group.length;
+      const centroidLon =
+        group.reduce((sum, item) => sum + item.longitude, 0) / group.length;
+
+      for (let j = 0; j < reports.length; j++) {
+        const candidate = reports[j]!;
+        if (visited.has(candidate.id)) continue;
+        const candidateCat = candidate.category_id ?? "unknown";
+        if (candidateCat !== catId) continue;
+
+        const candidateSolved = candidate.status === "solucionado";
+        if (seedSolved !== candidateSolved) continue;
+
+        const distToCentroid = distanceMeters(
+          centroidLat,
+          centroidLon,
+          candidate.latitude,
+          candidate.longitude,
+        );
+        const distToAnyMember = group.some(
+          (member) =>
+            distanceMeters(
+              member.latitude,
+              member.longitude,
+              candidate.latitude,
+              candidate.longitude,
+            ) <= radiusMeters,
+        );
+
+        if (distToCentroid <= radiusMeters || distToAnyMember) {
+          visited.add(candidate.id);
+          group.push(candidate);
+          added = true;
+        }
+      }
+    }
+
+    // Ordenar miembros: primero el de estado más avanzado / mayor prioridad / más antiguo
+    const sorted = [...group].sort((a, b) => {
+      const sa = a.status ? statusWeight[a.status] : 0;
+      const sb = b.status ? statusWeight[b.status] : 0;
+      if (sb !== sa) return sb - sa;
+      const pa = a.priority ? priorityWeight[a.priority] : 0;
+      const pb = b.priority ? priorityWeight[b.priority] : 0;
+      if (pb !== pa) return pb - pa;
+      if (a.created_at && b.created_at) {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+      return 0;
+    });
+
+    const primary = sorted[0]!;
+    const avgLat =
+      sorted.reduce((sum, item) => sum + item.latitude, 0) / sorted.length;
+    const avgLon =
+      sorted.reduce((sum, item) => sum + item.longitude, 0) / sorted.length;
+
+    const count = sorted.length;
+    const heatLevel: IncidentCluster["heatLevel"] =
+      count >= 5
+        ? "critico"
+        : count >= 3
+          ? "alto"
+          : count === 2
+            ? "medio"
+            : "normal";
+
+    clusters.push({
+      id: primary.id,
+      primary,
+      reports: sorted,
+      count,
+      duplicateCount: count - 1,
+      category_id: catId,
+      latitude: avgLat,
+      longitude: avgLon,
+      radiusMeters,
+      heatLevel,
+    });
+  }
+
+  return clusters;
+}
+
+/**
+ * Devuelve todos los reportes candidatos cercanos (dentro de radiusMeters)
+ * que compartan la misma categoría que el reporte objetivo (excluyendo el propio).
+ */
+export function findNearbySameCategoryReports<T extends ClusterableReport>(
+  target: Pick<ClusterableReport, "id" | "category_id" | "latitude" | "longitude" | "status">,
+  candidates: T[],
+  radiusMeters: number = DEFAULT_CLUSTER_RADIUS_M,
+): T[] {
+  const targetCat = target.category_id ?? "unknown";
+  const targetSolved = target.status === "solucionado";
+  return candidates.filter((c) => {
+    if (c.id === target.id) return false;
+    if ((c.category_id ?? "unknown") !== targetCat) return false;
+    if ((c.status === "solucionado") !== targetSolved) return false;
+    return (
+      distanceMeters(
+        target.latitude,
+        target.longitude,
+        c.latitude,
+        c.longitude,
+      ) <= radiusMeters
+    );
+  });
 }
 export function makeClient(
   env: { url: string; key: string; environment: string },
@@ -414,12 +710,18 @@ export function services(client: Client) {
         rid?: string,
         kind: MediaType = "initial",
       ) => {
-        // En subidas iniciales de ciudadanos, intentar subida directa a Storage
-        if (kind === "initial" && !rid) {
-          try {
-            const user = (await client.auth.getUser()).data.user;
-            if (user) {
-              const path = `uploads/${user.id}/${safeUUID()}.jpg`;
+        // Intentar subida directa a Storage (tanto para ciudadano inicial como para mantenimiento/resolución)
+        try {
+          const user = (await client.auth.getUser()).data.user;
+          if (user) {
+            const path =
+              kind === "initial" && !rid
+                ? `uploads/${user.id}/${safeUUID()}.jpg`
+                : rid
+                  ? `reports/${rid}/${user.id}/${safeUUID()}.jpg`
+                  : null;
+
+            if (path) {
               let bodyToUpload: Blob | ArrayBuffer;
 
               if (file instanceof Blob) {
@@ -439,18 +741,51 @@ export function services(client: Client) {
                 });
 
               if (!result.error) {
-                return { path };
+                if (rid && kind !== "initial") {
+                  const attach = await client.rpc("add_media", {
+                    rid,
+                    path,
+                    kind,
+                  });
+                  if (!attach.error) {
+                    return { path };
+                  }
+                  console.warn(
+                    "add_media RPC failed after direct upload, falling back:",
+                    attach.error,
+                  );
+                } else {
+                  return { path };
+                }
+              } else {
+                console.warn(
+                  "Direct storage upload failed, falling back to function:",
+                  result.error,
+                );
               }
-              console.warn("Direct storage upload failed, falling back to function:", result.error);
             }
-          } catch (storageErr) {
-            console.warn("Direct storage error, falling back to function:", storageErr);
           }
+        } catch (storageErr) {
+          console.warn(
+            "Direct storage error, falling back to function:",
+            storageErr,
+          );
         }
 
         const form = new FormData();
-        if (file instanceof Blob) form.append("file", file, "photo.jpg");
-        else form.append("file", file as unknown as Blob);
+        if (file instanceof Blob) {
+          form.append("file", file, "photo.jpg");
+        } else if (file && typeof file === "object" && "uri" in file) {
+          try {
+            const res = await fetch(file.uri);
+            const blob = await res.blob();
+            form.append("file", blob, file.name || "photo.jpg");
+          } catch {
+            form.append("file", file as unknown as Blob);
+          }
+        } else {
+          form.append("file", file as unknown as Blob);
+        }
         form.append("kind", kind);
         if (rid) form.append("report_id", rid);
         return call<{ path: string }>("upload-media", form);

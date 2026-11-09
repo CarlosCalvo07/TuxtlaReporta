@@ -20,7 +20,12 @@ import * as Crypto from "expo-crypto";
 import MapView, { Marker } from "react-native-maps";
 import { OpenStreetMap } from "./OpenStreetMap";
 import { router } from "expo-router";
-import { friendlyError, dateLabel } from "@tuxtla/shared";
+import {
+  friendlyError,
+  dateLabel,
+  getCategoryHeatStyle,
+  DEFAULT_CLUSTER_RADIUS_M,
+} from "@tuxtla/shared";
 import { statusLabels } from "@tuxtla/types";
 import { api, client } from "./backend";
 import { Button, Field, Screen, styles, Choices, BrandHeader, useTheme } from "./ui";
@@ -410,6 +415,37 @@ export default function Citizen() {
               value={category}
               onChange={setCategory}
             />
+            {Boolean(category) && (() => {
+              const selectedCat = categories.data?.find((c) => c.id === category);
+              const catStyle = getCategoryHeatStyle(selectedCat?.slug ?? selectedCat?.name);
+              return (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: 10,
+                    borderRadius: 8,
+                    backgroundColor: catStyle.badgeBg,
+                    borderWidth: 1,
+                    borderColor: catStyle.badgeBorder,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 5,
+                      backgroundColor: catStyle.color,
+                    }}
+                  />
+                  <Text style={{ fontSize: 12, color: colors.text, flex: 1, lineHeight: 17 }}>
+                    🔥 <Text style={{ fontWeight: "700" }}>{selectedCat?.name ?? catStyle.label}:</Text>{" "}
+                    Recibirás tu propio folio oficial. Si otros vecinos reportan esta misma incidencia en un rango corto (≤{DEFAULT_CLUSTER_RADIUS_M}m), se agruparán automáticamente en el mapa de calor municipal para aumentar su prioridad.
+                  </Text>
+                </View>
+              );
+            })()}
             <View>
               <Field
                 label="Descripción (20 a 2000 caracteres)"
@@ -949,16 +985,49 @@ export default function Citizen() {
                       alignItems: "center",
                     }}
                   >
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        fontWeight: "900",
-                        color: "#00d2ee",
-                        letterSpacing: 0.5,
-                      }}
-                    >
-                      {rep.folio}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: "900",
+                          color: "#00d2ee",
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        {rep.folio}
+                      </Text>
+                      {(() => {
+                        const catObj = categories.data?.find((c) => c.id === rep.category_id);
+                        const catStyle = getCategoryHeatStyle(catObj?.slug ?? catObj?.name);
+                        return (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 4,
+                              paddingHorizontal: 7,
+                              paddingVertical: 2.5,
+                              borderRadius: 999,
+                              backgroundColor: catStyle.badgeBg,
+                              borderWidth: 1,
+                              borderColor: catStyle.badgeBorder,
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: 3,
+                                backgroundColor: catStyle.color,
+                              }}
+                            />
+                            <Text style={{ fontSize: 10.5, fontWeight: "700", color: colors.text }}>
+                              {catObj?.name ?? catStyle.label}
+                            </Text>
+                          </View>
+                        );
+                      })()}
+                    </View>
                     <View
                       style={{
                         backgroundColor: statusBg,

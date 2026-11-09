@@ -1,8 +1,14 @@
 import { compressPhoto } from "../compress";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { dateLabel, nextReportStatus } from "@tuxtla/shared";
+import {
+  dateLabel,
+  DEFAULT_CLUSTER_RADIUS_M,
+  distanceMeters,
+  findNearbySameCategoryReports,
+  nextReportStatus,
+} from "@tuxtla/shared";
 import {
   statusLabels,
   priorities,
@@ -10,7 +16,7 @@ import {
   type ReportStatus,
 } from "@tuxtla/types";
 import { api } from "../backend";
-import { Badge, ErrorNotice, Map } from "../components";
+import { Badge, CategoryBadge, ErrorNotice, Map } from "../components";
 import { useSession } from "../session";
 
 function Photo({ path, label }: { path: string; label?: string }) {
@@ -55,10 +61,32 @@ export default function Detail() {
     [visibility, setVisibility] = useState<"internal" | "citizen_visible">("internal"),
     [isEditingAssignee, setIsEditingAssignee] = useState(false),
     [isEditingClassification, setIsEditingClassification] = useState(false),
+    [syncDuplicates, setSyncDuplicates] = useState(true),
     [uploadError, setUploadError] = useState<string | null>(null);
 
   const r = q.data?.report;
-  const area = categories.data?.find((c) => c.id === r?.category_id)?.maintenance_area_id;
+  const currentCat = categories.data?.find((c) => c.id === r?.category_id);
+  const area = currentCat?.maintenance_area_id;
+
+  const nearby = useQuery({
+    queryKey: ["nearby-reports", r?.id, r?.latitude, r?.longitude],
+    queryFn: () =>
+      api.reports.bbox(
+        r!.longitude - 0.001,
+        r!.latitude - 0.001,
+        r!.longitude + 0.001,
+        r!.latitude + 0.001,
+      ),
+    enabled: !!r,
+  });
+
+  const groupedDuplicates = useMemo(
+    () =>
+      r && nearby.data
+        ? findNearbySameCategoryReports(r, nearby.data, DEFAULT_CLUSTER_RADIUS_M)
+        : [],
+    [r, nearby.data],
+  );
 
   const staff = useQuery({
     queryKey: ["workload", area],
@@ -79,7 +107,6 @@ export default function Detail() {
     },
     onSuccess: () => {
       void cache.invalidateQueries();
-      setNote("");
       setIsEditingAssignee(false);
       setIsEditingClassification(false);
       setUploadError(null);
@@ -113,7 +140,12 @@ export default function Detail() {
   if (q.isPending) return <p role="status">Cargando reporte…</p>;
   if (!r) return <ErrorNotice error={q.error} />;
 
-  const next: ReportStatus | undefined = nextReportStatus(r.status, session.role);
+  const rawNext: ReportStatus | undefined = nextReportStatus(r.status, session.role);
+  const next: ReportStatus | undefined =
+    rawNext ??
+    (session.role === "maintenance" && r.status === "recibido" && activeAssignment
+      ? "en_atencion"
+      : undefined);
 
   const initialMedia = q.data?.media.filter((m) => m.media_type === "initial") ?? [];
   const resolutionMedia = q.data?.media.filter((m) => m.media_type === "resolution") ?? [];
@@ -232,7 +264,14 @@ export default function Detail() {
         <div>
           {/* Panel Principal de la Incidencia */}
           <section className="panel">
-            <h2>{categories.data?.find((c) => c.id === r.category_id)?.name}</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
+              <h2 style={{ margin: 0 }}>{currentCat?.name}</h2>
+              <CategoryBadge
+                name={currentCat?.name}
+                slug={currentCat?.slug}
+                duplicateCount={groupedDuplicates.length}
+              />
+            </div>
             <p className="description">{r.description}</p>
             <div className="metadata">
               <span>
@@ -247,8 +286,20 @@ export default function Detail() {
                   {r.location_source === "gps" ? "GPS confirmado" : "Seleccionada en mapa"}
                 </strong>
               </span>
+              {groupedDuplicates.length > 0 && (
+                <span>
+                  Agrupación en rango corto
+                  <strong>
+                    🔥 {groupedDuplicates.length + 1} reportes (≤ {DEFAULT_CLUSTER_RADIUS_M} m)
+                  </strong>
+                </span>
+              )}
             </div>
-            <Map reports={[r]} />
+            <Map
+              reports={[r, ...groupedDuplicates]}
+              categories={categories.data}
+              showControls={groupedDuplicates.length > 0}
+            />
             <p className="small">
               {r.latitude}, {r.longitude} {r.address_text && `· ${r.address_text}`}
             </p>
@@ -260,6 +311,53 @@ export default function Detail() {
               Abrir ruta de navegación ↗
             </a>
           </section>
+
+          {/* Panel de Reportes Repetidos Agrupados (Rango Corto <= 45 m, misma categoría) */}
+          {groupedDuplicates.length > 0 && (
+            <section className="panel">
+              <div className="panel-title">
+                <div>
+                  <h2>
+                    🔥 Incidencias repetidas agrupadas ({groupedDuplicates.length + 1} reportes)
+                  </h2>
+                  <p>
+                    Otros ciudadanos reportaron <strong>{currentCat?.name}</strong> en un rango
+                    corto menor a {DEFAULT_CLUSTER_RADIUS_M} metros de este punto.
+                  </p>
+                </div>
+                <span className="chip">Rango ≤ {DEFAULT_CLUSTER_RADIUS_M} m</span>
+              </div>
+              <div className="grouped-duplicates-grid">
+                {groupedDuplicates.map((dup) => {
+                  const dist = Math.round(
+                    distanceMeters(
+                      r.latitude,
+                      r.longitude,
+                      dup.latitude,
+                      dup.longitude,
+                    ),
+                  );
+                  return (
+                    <div key={dup.id} className="saved-card">
+                      <div className="saved-header">
+                        <strong className="folio">{dup.folio}</strong>
+                        <Badge status={dup.status} />
+                      </div>
+                      <p className="small" style={{ margin: "2px 0" }}>
+                        📍 A <strong>{dist} m</strong> de distancia · {dateLabel(dup.created_at)}
+                      </p>
+                      <p className="small" style={{ color: "var(--text-primary)" }}>
+                        {dup.description}
+                      </p>
+                      <Link to={`/reports/${dup.id}`} style={{ fontSize: 12, fontWeight: 700 }}>
+                        Abrir expediente vinculado ↗
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           {/* Panel de Evidencias Separadas */}
           <section className="panel">
@@ -415,6 +513,21 @@ export default function Detail() {
               </div>
             )}
 
+            {groupedDuplicates.length > 0 && r.status !== "solucionado" && (
+              <label className="check" style={{ margin: "10px 0" }}>
+                <input
+                  type="checkbox"
+                  checked={syncDuplicates}
+                  onChange={(e) => setSyncDuplicates(e.target.checked)}
+                />
+                <span>
+                  Sincronizar avance con los{" "}
+                  <strong>{groupedDuplicates.length}</strong> reporte(s) repetido(s) de esta
+                  misma incidencia (≤ {DEFAULT_CLUSTER_RADIUS_M} m)
+                </span>
+              </label>
+            )}
+
             <label>
               Observaciones / nota de resolución
               <textarea
@@ -445,9 +558,25 @@ export default function Detail() {
                     )
                   )
                     return;
-                  mutate.mutate(() =>
-                    api.reports.status(r.id, next, r.version, note),
-                  );
+                  mutate.mutate(async () => {
+                    const res = await api.reports.status(r.id, next, r.version, note);
+                    if (syncDuplicates && groupedDuplicates.length > 0 && next !== "solucionado") {
+                      for (const dup of groupedDuplicates) {
+                        if (dup.status === r.status) {
+                          try {
+                            await api.reports.status(
+                              dup.id,
+                              next,
+                              dup.version,
+                              note || `Actualización agrupada junto al folio ${r.folio}`,
+                            );
+                          } catch {}
+                        }
+                      }
+                    }
+                    setNote("");
+                    return res;
+                  });
                 }}
               >
                 {mutate.isPending
@@ -476,7 +605,10 @@ export default function Detail() {
               className="secondary"
               disabled={mutate.isPending || !note.trim()}
               onClick={() =>
-                mutate.mutate(() => api.reports.note(r.id, note, visibility))
+                mutate.mutate(async () => {
+                  await api.reports.note(r.id, note, visibility);
+                  setNote("");
+                })
               }
             >
               Guardar nota solamente
@@ -550,9 +682,49 @@ export default function Detail() {
                               r.status === "solucionado"
                             }
                             onClick={() =>
-                              mutate.mutate(() =>
-                                api.reports.assign(r.id, assignee, r.version, note),
-                              )
+                              mutate.mutate(async () => {
+                                const assigned = await api.reports.assign(
+                                  r.id,
+                                  assignee,
+                                  r.version,
+                                  note,
+                                );
+                                // Si estaba en recibido, pasarlo automáticamente a en_revision para habilitar el trabajo de campo
+                                if (assigned.status === "recibido") {
+                                  try {
+                                    await api.reports.status(
+                                      r.id,
+                                      "en_revision",
+                                      assigned.version,
+                                      note || "Asignado a personal operativo para atención",
+                                    );
+                                  } catch {}
+                                }
+                                // Sincronizar asignación con reportes repetidos del mismo punto (< 45m)
+                                if (syncDuplicates && groupedDuplicates.length > 0) {
+                                  for (const dup of groupedDuplicates) {
+                                    if (dup.status !== "solucionado") {
+                                      try {
+                                        const dupAssigned = await api.reports.assign(
+                                          dup.id,
+                                          assignee,
+                                          dup.version,
+                                          note || `Agrupado con folio ${r.folio}`,
+                                        );
+                                        if (dupAssigned.status === "recibido") {
+                                          await api.reports.status(
+                                            dup.id,
+                                            "en_revision",
+                                            dupAssigned.version,
+                                            `En revisión junto con folio ${r.folio}`,
+                                          );
+                                        }
+                                      } catch {}
+                                    }
+                                  }
+                                }
+                                return assigned;
+                              })
                             }
                           >
                             {mutate.isPending

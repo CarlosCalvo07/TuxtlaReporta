@@ -1,13 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Text, View, Image, Alert, Linking, Platform, Pressable } from "react-native";
 import Constants, { ExecutionEnvironment } from "expo-constants";
-import { useLocalSearchParams, Redirect } from "expo-router";
+import { useLocalSearchParams, Redirect, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import MapView, { Marker } from "react-native-maps";
 import { OpenStreetMap } from "../../src/OpenStreetMap";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
-import { dateLabel, friendlyError, nextReportStatus } from "@tuxtla/shared";
+import {
+  dateLabel,
+  DEFAULT_CLUSTER_RADIUS_M,
+  distanceMeters,
+  findNearbySameCategoryReports,
+  friendlyError,
+  getCategoryHeatStyle,
+  nextReportStatus,
+} from "@tuxtla/shared";
 
 const isMapAvailable =
   Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY) ||
@@ -71,11 +79,25 @@ export default function Detail() {
     queryFn: () => api.staff.workload(area ?? undefined),
     enabled: s.role === "admin" && !!area,
   });
+  const nearby = useQuery({
+    queryKey: ["nearby-reports", r?.id, r?.latitude, r?.longitude],
+    queryFn: () =>
+      api.reports.bbox(
+        r!.latitude - 0.002,
+        r!.longitude - 0.002,
+        r!.latitude + 0.002,
+        r!.longitude + 0.002,
+      ),
+    enabled: Boolean(r && s.role && s.role !== "citizen"),
+  });
+  const groupedDuplicates = useMemo(() => {
+    if (!r || !nearby.data) return [];
+    return findNearbySameCategoryReports(r, nearby.data, DEFAULT_CLUSTER_RADIUS_M);
+  }, [r, nearby.data]);
   const mutation = useMutation({
     mutationFn: (action: () => Promise<unknown>) => action(),
     onSuccess: () => {
       void cache.invalidateQueries();
-      setNote("");
       setIsEditingAssignee(false);
       setIsEditingClassification(false);
     },
@@ -105,14 +127,31 @@ export default function Detail() {
         </Text>
       </Screen>
     );
-  const next: ReportStatus | undefined = nextReportStatus(r.status, s.role);
-  async function upload() {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
+  const activeAssignment = q.data?.assignments?.find((a) => !a.ended_at);
+  const assignedWorker = staff.data?.find(
+    (w) => w.user_id === activeAssignment?.maintenance_user_id,
+  );
+  const rawNext: ReportStatus | undefined = nextReportStatus(r.status, s.role);
+  const next: ReportStatus | undefined =
+    rawNext ??
+    (s.role === "maintenance" && r.status === "recibido" && activeAssignment
+      ? "en_atencion"
+      : undefined);
+
+  async function upload(camera: boolean) {
+    const permission = camera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) throw new Error("Camera permission");
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"],
-      quality: 0.8,
-    });
+    const result = camera
+      ? await ImagePicker.launchCameraAsync({
+          mediaTypes: ["images"],
+          quality: 0.8,
+        })
+      : await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ["images"],
+          quality: 0.8,
+        });
     if (result.canceled) return;
     const photo = await ImageManipulator.manipulateAsync(
       result.assets[0]!.uri,
@@ -125,10 +164,8 @@ export default function Detail() {
       "resolution",
     );
   }
-  const activeAssignment = q.data?.assignments?.find((a) => !a.ended_at);
-  const assignedWorker = staff.data?.find(
-    (w) => w.user_id === activeAssignment?.maintenance_user_id,
-  );
+  const catObj = categories.data?.find((c) => c.id === r.category_id);
+  const catStyle = getCategoryHeatStyle(catObj?.slug ?? catObj?.name);
   const initialPhotos =
     q.data?.media.filter((m) => m.media_type === "initial") ?? [];
   const resolutionPhotos =
@@ -205,9 +242,47 @@ export default function Detail() {
 
       {/* Tarjeta de Información General */}
       <Card>
-        <Heading>
-          {categories.data?.find((c) => c.id === r.category_id)?.name || "Incidencia Urbana"}
-        </Heading>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              paddingHorizontal: 9,
+              paddingVertical: 4,
+              borderRadius: 999,
+              backgroundColor: catStyle.badgeBg,
+              borderColor: catStyle.badgeBorder,
+              borderWidth: 1,
+            }}
+          >
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: catStyle.color,
+              }}
+            />
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.text }}>
+              {catObj?.name || catStyle.label}
+            </Text>
+          </View>
+          {groupedDuplicates.length > 0 && (
+            <View
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 999,
+                backgroundColor: catStyle.color,
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: "800", color: "#fff" }}>
+                🔥 ×{groupedDuplicates.length + 1} reportes en ≤{DEFAULT_CLUSTER_RADIUS_M}m
+              </Text>
+            </View>
+          )}
+        </View>
         <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 21 }}>
           {r.description}
         </Text>
@@ -291,6 +366,24 @@ export default function Detail() {
         {Platform.OS === "android" ? (
           <OpenStreetMap
             point={{ latitude: r.latitude, longitude: r.longitude }}
+            {...(groupedDuplicates.length > 0
+              ? {
+                  clusters: [
+                    {
+                      id: r.id,
+                      latitude: r.latitude,
+                      longitude: r.longitude,
+                      count: groupedDuplicates.length + 1,
+                      color: catStyle.color,
+                      haloInner: catStyle.haloInner,
+                      haloOuter: catStyle.haloOuter,
+                      label: catObj?.name ?? catStyle.label,
+                      folio: r.folio,
+                    },
+                  ],
+                  radiusMeters: DEFAULT_CLUSTER_RADIUS_M,
+                }
+              : {})}
             isDark={mode === "dark"}
             height={230}
             interactive={false}
@@ -341,16 +434,71 @@ export default function Detail() {
             </Text>
           </View>
         )}
-        <Button
-          secondary
-          title="Ver en Google Maps"
-          onPress={() => {
-            void Linking.openURL(
-              `https://www.google.com/maps/search/?api=1&query=${r.latitude},${r.longitude}`,
-            );
-          }}
-        />
+        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+          <View style={{ flex: 1 }}>
+            <Button
+              secondary
+              title="📍 Ver en Google Maps"
+              onPress={() => {
+                void Linking.openURL(
+                  `https://www.google.com/maps/search/?api=1&query=${r.latitude},${r.longitude}`,
+                );
+              }}
+            />
+          </View>
+          {s.role !== "citizen" && (
+            <View style={{ flex: 1 }}>
+              <Button
+                secondary
+                title="🧭 Cómo llegar"
+                onPress={() => {
+                  void Linking.openURL(
+                    `https://www.google.com/maps/dir/?api=1&destination=${r.latitude},${r.longitude}`,
+                  );
+                }}
+              />
+            </View>
+          )}
+        </View>
       </Card>
+
+      {/* Incidencias repetidas agrupadas en rango corto (para personal y admin) */}
+      {s.role !== "citizen" && groupedDuplicates.length > 0 && (
+        <Card>
+          <Heading>🔥 Incidencias repetidas agrupadas ({groupedDuplicates.length})</Heading>
+          <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>
+            Otros ciudadanos reportaron esta misma categoría ({catObj?.name || catStyle.label}) a menos de {DEFAULT_CLUSTER_RADIUS_M} metros:
+          </Text>
+          {groupedDuplicates.map((dup) => {
+            const dist = Math.round(
+              distanceMeters(r.latitude, r.longitude, dup.latitude, dup.longitude),
+            );
+            return (
+              <Pressable
+                key={dup.id}
+                onPress={() => router.push(`/report/${dup.id}`)}
+                style={{
+                  padding: 10,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: catStyle.badgeBorder,
+                  backgroundColor: catStyle.badgeBg,
+                  marginBottom: 6,
+                }}
+              >
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <Text style={{ fontSize: 13, fontWeight: "800", color: colors.text }}>
+                    {dup.folio} · a {dist} m
+                  </Text>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: catStyle.color }}>
+                    {statusLabels[dup.status]}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </Card>
+      )}
 
       {/* Evidencia Inicial (Ciudadano) */}
       <Card>
@@ -478,9 +626,16 @@ export default function Detail() {
 
           <Button
             secondary
-            title="📷 Tomar fotografía de conclusión"
+            title="📷 Tomar foto de conclusión con cámara"
             disabled={mutation.isPending}
-            onPress={() => mutation.mutate(upload)}
+            onPress={() => mutation.mutate(() => upload(true))}
+          />
+
+          <Button
+            secondary
+            title="🖼️ Elegir foto de conclusión de galería"
+            disabled={mutation.isPending}
+            onPress={() => mutation.mutate(() => upload(false))}
           />
 
           <Button
@@ -488,7 +643,10 @@ export default function Detail() {
             title="Guardar nota interna"
             disabled={mutation.isPending || !note.trim()}
             onPress={() =>
-              mutation.mutate(() => api.reports.note(id, note, "internal"))
+              mutation.mutate(async () => {
+                await api.reports.note(id, note, "internal");
+                setNote("");
+              })
             }
           />
 
@@ -500,9 +658,28 @@ export default function Detail() {
               }
               onPress={() => {
                 const action = () =>
-                  mutation.mutate(() =>
-                    api.reports.status(id, next, r.version, note),
-                  );
+                  mutation.mutate(async () => {
+                    const updated = await api.reports.status(
+                      id,
+                      next,
+                      r.version,
+                      note || "Actualización de estatus operativo",
+                    );
+                    for (const dup of groupedDuplicates) {
+                      if (dup.status !== next && dup.status !== "solucionado") {
+                        await api.reports
+                          .status(
+                            dup.id,
+                            next,
+                            dup.version,
+                            `Sincronizado con reporte agrupado ${r.folio}`,
+                          )
+                          .catch(() => undefined);
+                      }
+                    }
+                    setNote("");
+                    return updated;
+                  });
                 if (next === "solucionado") {
                   Alert.alert(
                     "Confirmar resolución institucional",
@@ -620,9 +797,46 @@ export default function Detail() {
                       r.status === "solucionado"
                     }
                     onPress={() =>
-                      mutation.mutate(() =>
-                        api.reports.assign(id, assignee, r.version, note),
-                      )
+                      mutation.mutate(async () => {
+                        const assigned = await api.reports.assign(
+                          id,
+                          assignee,
+                          r.version,
+                          note,
+                        );
+                        if (assigned.status === "recibido") {
+                          await api.reports
+                            .status(
+                              id,
+                              "en_revision",
+                              assigned.version,
+                              "Puesto en revisión al asignar personal operativo",
+                            )
+                            .catch(() => undefined);
+                        }
+                        for (const dup of groupedDuplicates) {
+                          if (dup.status !== "solucionado") {
+                            const dAssigned = await api.reports
+                              .assign(
+                                dup.id,
+                                assignee,
+                                dup.version,
+                                `Asignación agrupada con ${r.folio}`,
+                              )
+                              .catch(() => null);
+                            if (dAssigned && dAssigned.status === "recibido") {
+                              await api.reports
+                                .status(
+                                  dup.id,
+                                  "en_revision",
+                                  dAssigned.version,
+                                  `En revisión junto con ${r.folio}`,
+                                )
+                                .catch(() => undefined);
+                            }
+                          }
+                        }
+                      })
                     }
                   />
                 </>

@@ -216,7 +216,7 @@ begin
  if not coalesce(private.can_read_report(rid),false) or private.my_role() not in ('admin','maintenance') then raise exception 'FORBIDDEN' using errcode='42501'; end if;
  if r.version<>expected_version then raise exception 'CONFLICT'; end if;
  old:=r.status;
- if not ((old='recibido' and target='en_revision' and private.my_role()='admin') or (old='en_revision' and target='en_atencion') or (old='en_atencion' and target='solucionado')) then raise exception 'INVALID_TRANSITION'; end if;
+ if not ((old='recibido' and target='en_revision' and private.my_role()='admin') or (old in ('recibido','en_revision') and target='en_atencion') or (old='en_atencion' and target='solucionado')) then raise exception 'INVALID_TRANSITION'; end if;
  if target='en_atencion' and not exists(select 1 from public.report_assignments where report_id=rid and ended_at is null) then raise exception 'ASSIGNMENT_REQUIRED'; end if;
  if target='solucionado' and (length(trim(note))<5 or not exists(select 1 from public.report_media where report_id=rid and media_type='resolution')) then raise exception 'RESOLUTION_REQUIRED'; end if;
  update public.reports set status=target,updated_at=now(),version=version+1,
