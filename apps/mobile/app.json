@@ -16,6 +16,10 @@
     },
     "android": {
       "package": "mx.tuxtla.reporta",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyDummyKeyForBuildsOnly_NotReal"
