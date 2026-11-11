@@ -1,5 +1,5 @@
 import { registerPush } from "./notifications";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Text,
   View,
@@ -10,6 +10,7 @@ import {
   Platform,
   TextInput,
   ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Constants, { ExecutionEnvironment } from "expo-constants";
@@ -27,7 +28,19 @@ import {
 } from "@tuxtla/shared";
 import { statusLabels } from "@tuxtla/types";
 import { api, client } from "./backend";
-import { Button, Field, Screen, styles, Choices, BrandHeader, useTheme } from "./ui";
+import {
+  Button,
+  Card,
+  Heading,
+  Field,
+  Screen,
+  styles,
+  Choices,
+  BrandHeader,
+  DonationSection,
+  useTheme,
+  useResponsiveLayout,
+} from "./ui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSession } from "./session";
 
@@ -44,12 +57,27 @@ export default function Citizen() {
   const session = useSession();
   const { colors, mode } = useTheme();
   const insets = useSafeAreaInsets();
+  const { mapHeight, isCompact } = useResponsiveLayout();
 
   const [activeTab, setActiveTab] = useState<TabKey>("report");
   const [reportSearch, setReportSearch] = useState("");
   const [pushStatusMessage, setPushStatusMessage] = useState("");
   const [pushRegistering, setPushRegistering] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () =>
+      setKeyboardVisible(true),
+    );
+    const hideSub = Keyboard.addListener("keyboardDidHide", () =>
+      setKeyboardVisible(false),
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Consulta de perfil de usuario
   const userProfile = useQuery({
@@ -344,264 +372,264 @@ export default function Citizen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* ============================================================ */}
-      {/* VISTA 1: REPORTAR INCIDENCIAS                                */}
-      {/* ============================================================ */}
-      {activeTab === "report" && (
-        <Screen contentStyle={{ paddingBottom: 100 }}>
-          <BrandHeader
-            title="Reportar incidencia"
-            subtitle="Registra baches, luminarias, fugas y más para atención municipal directa."
-          />
+      <View style={{ flex: 1 }}>
+        {/* ============================================================ */}
+        {/* VISTA 1: REPORTAR INCIDENCIAS                                */}
+        {/* ============================================================ */}
+        {activeTab === "report" && (
+          <Screen hasTabBar>
+            <BrandHeader
+              title="Reportar incidencia"
+              subtitle="Registra baches, luminarias, fugas y más para atención municipal directa."
+            />
 
-          {createdSuccess && (
-            <View
-              style={[
-                styles.card,
-                {
+            {createdSuccess && (
+              <Card
+                style={{
                   backgroundColor: "rgba(0, 230, 153, 0.12)",
                   borderColor: "#00e699",
                   borderWidth: 1.5,
                   alignItems: "center",
-                  padding: 18,
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "800",
-                  color: "#00e699",
-                  marginBottom: 4,
-                }}
-              >
-                ¡Reporte enviado con éxito!
-              </Text>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: "#94a3b8",
-                  textAlign: "center",
-                  marginBottom: 12,
-                }}
-              >
-                Tu folio de seguimiento asignado es:
-              </Text>
-              <View
-                style={{
-                  backgroundColor: "rgba(4, 9, 20, 0.9)",
-                  borderRadius: 10,
-                  borderWidth: 1.5,
-                  borderColor: "#00d2ee",
-                  paddingVertical: 10,
-                  paddingHorizontal: 18,
-                  alignItems: "center",
-                  marginBottom: 14,
-                  width: "100%",
                 }}
               >
                 <Text
-                  selectable
                   style={{
-                    fontSize: 20,
-                    fontWeight: "900",
-                    color: "#00d2ee",
-                    letterSpacing: 1.5,
+                    fontSize: 18,
+                    fontWeight: "800",
+                    color: "#00e699",
+                    marginBottom: 4,
+                    textAlign: "center",
                   }}
                 >
-                  {createdSuccess.folio}
+                  ¡Reporte enviado con éxito!
                 </Text>
-              </View>
-              <View style={{ width: "100%", gap: 8 }}>
-                <Button
-                  title="Ver detalle del reporte"
-                  onPress={() => router.push(`/report/${createdSuccess.id}`)}
-                />
-                <Button
-                  secondary
-                  title="Ver en 'Mis reportes'"
-                  onPress={() => {
-                    setCreatedSuccess(null);
-                    setActiveTab("my_reports");
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: colors.textSecondary,
+                    textAlign: "center",
+                    marginBottom: 12,
                   }}
-                />
-                <Button
-                  secondary
-                  title="Hacer otro reporte"
-                  onPress={() => setCreatedSuccess(null)}
-                />
-              </View>
-            </View>
-          )}
-
-          {/* Formulario de reporte */}
-          <View style={styles.card}>
-            <Choices
-              label="Tipo de incidencia"
-              options={
-                categories.data
-                  ?.filter((c) => c.is_active)
-                  .map((c) => ({ id: c.id, name: c.name })) ?? []
-              }
-              value={category}
-              onChange={setCategory}
-            />
-            <View>
-              <Field
-                label="Descripción (20 a 2000 caracteres)"
-                multiline
-                maxLength={2000}
-                numberOfLines={5}
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Describe qué sucede, puntos de referencia visibles, tiempo que lleva la situación..."
-              />
-              <Text
-                style={[
-                  styles.small,
-                  {
-                    textAlign: "right",
-                    marginTop: 4,
-                    color:
-                      description.trim().length >= 20 ? "#00e699" : "#ffb800",
-                    fontWeight:
-                      description.trim().length >= 20 ? "700" : "500",
-                  },
-                ]}
-              >
-                {description.trim().length}/20 caracteres mínimos{" "}
-                {description.trim().length >= 20 ? "(cumplido)" : ""}
-              </Text>
-            </View>
-            <Field
-              label="Colonia o zona"
-              value={neighborhood}
-              onChangeText={setNeighborhood}
-              maxLength={150}
-              placeholder="Ej. Las Terrazas, Centro, Plan de Ayala..."
-            />
-          </View>
-
-          {/* Evidencia fotográfica */}
-          <View style={styles.card}>
-            <Text style={styles.heading}>Evidencia fotográfica</Text>
-            <Text style={styles.small}>
-              Sube de 1 a 5 fotografías claras. Evita capturar rostros o datos personales.
-            </Text>
-            {photos.length > 0 ? (
-              <View style={styles.row}>
-                {photos.map((uri, idx) => (
-                  <View key={uri} style={{ position: "relative" }}>
-                    <Image
-                      source={{ uri }}
-                      accessibilityLabel="Foto seleccionada"
-                      style={{ width: 85, height: 85, borderRadius: 8 }}
-                    />
-                    <Pressable
-                      accessibilityLabel="Eliminar fotografía"
-                      onPress={() =>
-                        setPhotos((p) => p.filter((_, i) => i !== idx))
-                      }
-                      style={{
-                        position: "absolute",
-                        top: -6,
-                        right: -6,
-                        backgroundColor: "#c62828",
-                        borderRadius: 12,
-                        width: 22,
-                        height: 22,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "white",
-                          fontSize: 12,
-                          fontWeight: "bold",
-                        }}
-                      >
-                        ×
-                      </Text>
-                    </Pressable>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={{ color: "#ffb800", fontSize: 13 }}>
-                Debes agregar al menos 1 fotografía de evidencia.
-              </Text>
-            )}
-            <Button
-              title="Tomar fotografía con cámara"
-              disabled={photos.length >= 5 || submit.isPending}
-              onPress={() => void photo(true)}
-            />
-            <Button
-              secondary
-              title="Elegir de galería"
-              disabled={photos.length >= 5 || submit.isPending}
-              onPress={() => void photo(false)}
-            />
-          </View>
-
-          {/* Ubicación: GPS + Mapa interactivo (sin atajos de zona) */}
-          <View style={styles.card}>
-            <Text style={styles.heading}>¿Dónde sucede?</Text>
-            <Text style={styles.small}>
-              Usa el GPS o toca directamente el mapa para marcar el lugar exacto.
-            </Text>
-            <Button
-              secondary
-              title="Usar mi ubicación actual (GPS)"
-              onPress={() => void gps()}
-            />
-
-            {Platform.OS === "android" ? (
-              <OpenStreetMap
-                point={point}
-                isDark={mode === "dark"}
-                onSelectPoint={(coords) => {
-                  setPoint({ ...coords, source: "manual_map" });
-                }}
-              />
-            ) : isMapAvailable ? (
-              <MapView
-                style={{ height: 280, borderRadius: 10, marginVertical: 8 }}
-                initialRegion={{
-                  latitude: 16.753,
-                  longitude: -93.116,
-                  latitudeDelta: 0.045,
-                  longitudeDelta: 0.045,
-                }}
-                {...(point
-                  ? {
-                      region: {
-                        latitude: point.latitude,
-                        longitude: point.longitude,
-                        latitudeDelta: 0.025,
-                        longitudeDelta: 0.025,
-                      },
-                    }
-                  : {})}
-                onPress={(e) => {
-                  setPoint({ ...e.nativeEvent.coordinate, source: "manual_map" });
-                }}
-              >
-                {point && (
-                  <Marker
-                    coordinate={point}
-                    draggable
-                    onDragEnd={(e) => {
-                      setPoint({
-                        ...e.nativeEvent.coordinate,
-                        source: "manual_map",
-                      });
+                >
+                  Tu folio de seguimiento asignado es:
+                </Text>
+                <View
+                  style={{
+                    backgroundColor: "rgba(4, 9, 20, 0.9)",
+                    borderRadius: 10,
+                    borderWidth: 1.5,
+                    borderColor: "#00d2ee",
+                    paddingVertical: 10,
+                    paddingHorizontal: 18,
+                    alignItems: "center",
+                    marginBottom: 14,
+                    width: "100%",
+                  }}
+                >
+                  <Text
+                    selectable
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "900",
+                      color: "#00d2ee",
+                      letterSpacing: 1.5,
+                    }}
+                  >
+                    {createdSuccess.folio}
+                  </Text>
+                </View>
+                <View style={{ width: "100%", gap: 8 }}>
+                  <Button
+                    title="Ver detalle del reporte"
+                    onPress={() => router.push(`/report/${createdSuccess.id}`)}
+                  />
+                  <Button
+                    secondary
+                    title="Ver en 'Mis reportes'"
+                    onPress={() => {
+                      setCreatedSuccess(null);
+                      setActiveTab("my_reports");
                     }}
                   />
-                )}
-              </MapView>
-            ) : (
+                  <Button
+                    secondary
+                    title="Hacer otro reporte"
+                    onPress={() => setCreatedSuccess(null)}
+                  />
+                </View>
+                <DonationSection compactTrigger />
+              </Card>
+            )}
+
+            {/* Formulario de reporte */}
+            <Card>
+              <Choices
+                label="Tipo de incidencia"
+                options={
+                  categories.data
+                    ?.filter((c) => c.is_active)
+                    .map((c) => ({ id: c.id, name: c.name })) ?? []
+                }
+                value={category}
+                onChange={setCategory}
+              />
+              <View>
+                <Field
+                  label="Descripción (20 a 2000 caracteres)"
+                  multiline
+                  maxLength={2000}
+                  numberOfLines={5}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Describe qué sucede, puntos de referencia visibles, tiempo que lleva la situación..."
+                />
+                <Text
+                  style={[
+                    styles.small,
+                    {
+                      textAlign: "right",
+                      marginTop: 4,
+                      color:
+                        description.trim().length >= 20 ? "#00e699" : "#ffb800",
+                      fontWeight:
+                        description.trim().length >= 20 ? "700" : "500",
+                    },
+                  ]}
+                >
+                  {description.trim().length}/20 caracteres mínimos{" "}
+                  {description.trim().length >= 20 ? "(cumplido)" : ""}
+                </Text>
+              </View>
+              <Field
+                label="Colonia o zona"
+                value={neighborhood}
+                onChangeText={setNeighborhood}
+                maxLength={150}
+                placeholder="Ej. Las Terrazas, Centro, Plan de Ayala..."
+              />
+            </Card>
+
+            {/* Evidencia fotográfica */}
+            <Card>
+              <Heading>Evidencia fotográfica</Heading>
+              <Text style={styles.small}>
+                Sube de 1 a 5 fotografías claras. Evita capturar rostros o datos personales.
+              </Text>
+              {photos.length > 0 ? (
+                <View style={styles.row}>
+                  {photos.map((uri, idx) => (
+                    <View key={uri} style={{ position: "relative" }}>
+                      <Image
+                        source={{ uri }}
+                        accessibilityLabel="Foto seleccionada"
+                        style={{ width: 85, height: 85, borderRadius: 8 }}
+                      />
+                      <Pressable
+                        accessibilityLabel="Eliminar fotografía"
+                        onPress={() =>
+                          setPhotos((p) => p.filter((_, i) => i !== idx))
+                        }
+                        style={{
+                          position: "absolute",
+                          top: -6,
+                          right: -6,
+                          backgroundColor: "#c62828",
+                          borderRadius: 12,
+                          width: 22,
+                          height: 22,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: "white",
+                            fontSize: 12,
+                            fontWeight: "bold",
+                          }}
+                        >
+                          ×
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={{ color: "#ffb800", fontSize: 13 }}>
+                  Debes agregar al menos 1 fotografía de evidencia.
+                </Text>
+              )}
+              <Button
+                title="Tomar fotografía con cámara"
+                disabled={photos.length >= 5 || submit.isPending}
+                onPress={() => void photo(true)}
+              />
+              <Button
+                secondary
+                title="Elegir de galería"
+                disabled={photos.length >= 5 || submit.isPending}
+                onPress={() => void photo(false)}
+              />
+            </Card>
+
+            {/* Ubicación: GPS + Mapa interactivo (sin atajos de zona) */}
+            <Card>
+              <Heading>¿Dónde sucede?</Heading>
+              <Text style={styles.small}>
+                Usa el GPS o toca directamente el mapa para marcar el lugar exacto.
+              </Text>
+              <Button
+                secondary
+                title="Usar mi ubicación actual (GPS)"
+                onPress={() => void gps()}
+              />
+
+              {Platform.OS === "android" ? (
+                <OpenStreetMap
+                  point={point}
+                  height={mapHeight}
+                  isDark={mode === "dark"}
+                  onSelectPoint={(coords) => {
+                    setPoint({ ...coords, source: "manual_map" });
+                  }}
+                />
+              ) : isMapAvailable ? (
+                <MapView
+                  style={{ height: mapHeight, borderRadius: 10, marginVertical: 8 }}
+                  initialRegion={{
+                    latitude: 16.753,
+                    longitude: -93.116,
+                    latitudeDelta: 0.045,
+                    longitudeDelta: 0.045,
+                  }}
+                  {...(point
+                    ? {
+                        region: {
+                          latitude: point.latitude,
+                          longitude: point.longitude,
+                          latitudeDelta: 0.025,
+                          longitudeDelta: 0.025,
+                        },
+                      }
+                    : {})}
+                  onPress={(e) => {
+                    setPoint({ ...e.nativeEvent.coordinate, source: "manual_map" });
+                  }}
+                >
+                  {point && (
+                    <Marker
+                      coordinate={point}
+                      draggable
+                      onDragEnd={(e) => {
+                        setPoint({
+                          ...e.nativeEvent.coordinate,
+                          source: "manual_map",
+                        });
+                      }}
+                    />
+                  )}
+                </MapView>
+              ) : (
               <View
                 style={{
                   padding: 14,
@@ -745,7 +773,7 @@ export default function Citizen() {
                 Toca el mapa o pulsa "Usar mi ubicación actual" para fijar las coordenadas.
               </Text>
             )}
-          </View>
+          </Card>
 
           {(message || submit.error || categories.error) && (
             <Text style={styles.error}>
@@ -760,7 +788,10 @@ export default function Citizen() {
             !point) && (
             <View
               style={{
-                backgroundColor: "rgba(10, 22, 44, 0.8)",
+                backgroundColor:
+                  mode === "dark"
+                    ? "rgba(10, 22, 44, 0.8)"
+                    : "rgba(241, 245, 249, 0.95)",
                 borderColor: "rgba(0, 210, 238, 0.25)",
                 borderWidth: 1,
                 padding: 14,
@@ -817,696 +848,778 @@ export default function Citizen() {
             disabled={submit.isPending}
             onPress={validateAndSubmit}
           />
-        </Screen>
-      )}
+          </Screen>
+        )}
 
-      {/* ============================================================ */}
-      {/* VISTA 2: MIS REPORTES                                        */}
-      {/* ============================================================ */}
-      {activeTab === "my_reports" && (
-        <Screen contentStyle={{ paddingBottom: 100 }}>
-          <BrandHeader
-            title="Mis reportes"
-            subtitle="Consulta el historial y seguimiento en tiempo real de tus incidencias."
-          />
+        {/* ============================================================ */}
+        {/* VISTA 2: MIS REPORTES                                        */}
+        {/* ============================================================ */}
+        {activeTab === "my_reports" && (
+          <Screen hasTabBar>
+            <BrandHeader
+              title="Mis reportes"
+              subtitle="Consulta el historial y seguimiento en tiempo real de tus incidencias."
+            />
 
-          {/* Barra de búsqueda y contador */}
-          <View style={[styles.card, { padding: 14, gap: 10 }]}>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text }}>
-                {reportsCount === 0
-                  ? "Sin reportes aún"
-                  : `${reportsCount} ${reportsCount === 1 ? "reporte registrado" : "reportes registrados"}`}
-              </Text>
-              <Pressable
-                onPress={() => void myReports.refetch()}
+            {/* Barra de búsqueda y contador */}
+            <Card style={{ padding: 14, gap: 10 }}>
+              <View
                 style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 5,
-                  borderRadius: 6,
-                  backgroundColor: "rgba(0, 210, 238, 0.12)",
-                }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: "600", color: "#00d2ee" }}>
-                  Actualizar
-                </Text>
-              </Pressable>
-            </View>
-
-            {reportsCount > 0 && (
-              <TextInput
-                value={reportSearch}
-                onChangeText={setReportSearch}
-                placeholder="Buscar por folio, colonia o descripción..."
-                placeholderTextColor="#64748b"
-                style={{
-                  backgroundColor: colors.inputBg,
-                  borderColor: colors.inputBorder,
-                  borderWidth: 1,
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 9,
-                  color: colors.text,
-                  fontSize: 14,
-                }}
-              />
-            )}
-          </View>
-
-          {myReports.isPending && (
-            <View style={{ alignItems: "center", paddingVertical: 30 }}>
-              <ActivityIndicator size="large" color="#00d2ee" />
-              <Text style={[styles.small, { marginTop: 10 }]}>
-                Cargando tus reportes…
-              </Text>
-            </View>
-          )}
-
-          {/* Estado vacío: sin reportes */}
-          {!myReports.isPending && reportsCount === 0 && (
-            <View
-              style={[
-                styles.card,
-                {
+                  flexDirection: "row",
+                  justifyContent: "space-between",
                   alignItems: "center",
-                  paddingVertical: 36,
-                  paddingHorizontal: 20,
-                  gap: 12,
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "700",
-                  color: colors.text,
-                  textAlign: "center",
+                  flexWrap: "wrap",
+                  gap: 8,
                 }}
               >
-                Aún no has enviado reportes
-              </Text>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: colors.textSecondary,
-                  textAlign: "center",
-                  lineHeight: 18,
-                }}
-              >
-                Ayuda a mejorar Tuxtla Gutiérrez reportando baches, fugas de agua, fallas de alumbrado o basura acumulada.
-              </Text>
-              <View style={{ marginTop: 8, width: "100%" }}>
-                <Button
-                  title="Crear mi primer reporte"
-                  onPress={() => setActiveTab("report")}
-                />
+                <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text }}>
+                  {reportsCount === 0
+                    ? "Sin reportes aún"
+                    : `${reportsCount} ${reportsCount === 1 ? "reporte registrado" : "reportes registrados"}`}
+                </Text>
+                <Pressable
+                  onPress={() => void myReports.refetch()}
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: 6,
+                    backgroundColor: "rgba(0, 210, 238, 0.12)",
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#00d2ee" }}>
+                    Actualizar
+                  </Text>
+                </Pressable>
               </View>
-            </View>
-          )}
 
-          {/* Listado filtrado */}
-          {!myReports.isPending &&
-            reportsCount > 0 &&
-            filteredReports.length === 0 && (
-              <View style={[styles.card, { alignItems: "center", padding: 24 }]}>
-                <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-                  No se encontraron reportes con ese criterio de búsqueda.
+              {reportsCount > 0 && (
+                <TextInput
+                  value={reportSearch}
+                  onChangeText={setReportSearch}
+                  placeholder="Buscar por folio, colonia o descripción..."
+                  placeholderTextColor="#64748b"
+                  style={{
+                    backgroundColor: colors.inputBg,
+                    borderColor: colors.inputBorder,
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 9,
+                    color: colors.text,
+                    fontSize: 14,
+                  }}
+                />
+              )}
+            </Card>
+
+            {myReports.isPending && (
+              <View style={{ alignItems: "center", paddingVertical: 30 }}>
+                <ActivityIndicator size="large" color="#00d2ee" />
+                <Text style={[styles.small, { marginTop: 10 }]}>
+                  Cargando tus reportes…
                 </Text>
               </View>
             )}
 
-          {!myReports.isPending &&
-            filteredReports.map((rep) => {
-              const statusColor =
-                rep.status === "solucionado"
-                  ? "#00e699"
-                  : rep.status === "en_atencion"
-                    ? "#60a5fa"
-                    : rep.status === "en_revision"
-                      ? "#ffb800"
-                      : "#00d2ee";
-
-              const statusBg =
-                rep.status === "solucionado"
-                  ? "rgba(0, 230, 153, 0.15)"
-                  : rep.status === "en_atencion"
-                    ? "rgba(59, 130, 246, 0.18)"
-                    : rep.status === "en_revision"
-                      ? "rgba(255, 184, 0, 0.15)"
-                      : "rgba(0, 210, 238, 0.12)";
-
-              return (
-                <Pressable
-                  key={rep.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Ver reporte ${rep.folio}`}
-                  onPress={() => router.push(`/report/${rep.id}`)}
-                  style={({ pressed }) => [
-                    styles.card,
-                    {
-                      padding: 16,
-                      gap: 8,
-                      borderColor: pressed ? "#00d2ee" : colors.border,
-                      transform: [{ scale: pressed ? 0.99 : 1 }],
-                    },
-                  ]}
+            {/* Estado vacío: sin reportes */}
+            {!myReports.isPending && reportsCount === 0 && (
+              <Card
+                style={{
+                  alignItems: "center",
+                  paddingVertical: 32,
+                  paddingHorizontal: 18,
+                  gap: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "700",
+                    color: colors.text,
+                    textAlign: "center",
+                  }}
                 >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
+                  Aún no has enviado reportes
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: colors.textSecondary,
+                    textAlign: "center",
+                    lineHeight: 18,
+                  }}
+                >
+                  Ayuda a mejorar Tuxtla Gutiérrez reportando baches, fugas de agua, fallas de alumbrado o basura acumulada.
+                </Text>
+                <View style={{ marginTop: 8, width: "100%" }}>
+                  <Button
+                    title="Crear mi primer reporte"
+                    onPress={() => setActiveTab("report")}
+                  />
+                </View>
+              </Card>
+            )}
+
+            {/* Listado filtrado */}
+            {!myReports.isPending &&
+              reportsCount > 0 &&
+              filteredReports.length === 0 && (
+                <Card style={{ alignItems: "center", padding: 24 }}>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: "center" }}>
+                    No se encontraron reportes con ese criterio de búsqueda.
+                  </Text>
+                </Card>
+              )}
+
+            {!myReports.isPending &&
+              filteredReports.map((rep) => {
+                const statusColor =
+                  rep.status === "solucionado"
+                    ? "#00e699"
+                    : rep.status === "en_atencion"
+                      ? "#60a5fa"
+                      : rep.status === "en_revision"
+                        ? "#ffb800"
+                        : "#00d2ee";
+
+                const statusBg =
+                  rep.status === "solucionado"
+                    ? "rgba(0, 230, 153, 0.15)"
+                    : rep.status === "en_atencion"
+                      ? "rgba(59, 130, 246, 0.18)"
+                      : rep.status === "en_revision"
+                        ? "rgba(255, 184, 0, 0.15)"
+                        : "rgba(0, 210, 238, 0.12)";
+
+                return (
+                  <Pressable
+                    key={rep.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ver reporte ${rep.folio}`}
+                    onPress={() => router.push(`/report/${rep.id}`)}
+                    style={({ pressed }) => [
+                      styles.card,
+                      {
+                        backgroundColor: colors.card,
+                        padding: isCompact ? 14 : 16,
+                        gap: 8,
+                        borderColor: pressed ? "#00d2ee" : colors.border,
+                        transform: [{ scale: pressed ? 0.99 : 1 }],
+                      },
+                    ]}
                   >
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: "900",
-                          color: "#00d2ee",
-                          letterSpacing: 0.5,
-                        }}
-                      >
-                        {rep.folio}
-                      </Text>
-                      {(() => {
-                        const catObj = categories.data?.find((c) => c.id === rep.category_id);
-                        const catStyle = getCategoryHeatStyle(catObj?.slug ?? catObj?.name);
-                        return (
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              gap: 4,
-                              paddingHorizontal: 7,
-                              paddingVertical: 2.5,
-                              borderRadius: 999,
-                              backgroundColor: catStyle.badgeBg,
-                              borderWidth: 1,
-                              borderColor: catStyle.badgeBorder,
-                            }}
-                          >
-                            <View
-                              style={{
-                                width: 6,
-                                height: 6,
-                                borderRadius: 3,
-                                backgroundColor: catStyle.color,
-                              }}
-                            />
-                            <Text style={{ fontSize: 10.5, fontWeight: "700", color: colors.text }}>
-                              {catObj?.name ?? catStyle.label}
-                            </Text>
-                          </View>
-                        );
-                      })()}
-                    </View>
                     <View
                       style={{
-                        backgroundColor: statusBg,
-                        borderColor: statusColor,
-                        borderWidth: 1,
-                        paddingHorizontal: 9,
-                        paddingVertical: 3.5,
-                        borderRadius: 6,
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 8,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: 8,
+                          flexShrink: 1,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 15.5,
+                            fontWeight: "900",
+                            color: "#00d2ee",
+                            letterSpacing: 0.5,
+                          }}
+                        >
+                          {rep.folio}
+                        </Text>
+                        {(() => {
+                          const catObj = categories.data?.find((c) => c.id === rep.category_id);
+                          const catStyle = getCategoryHeatStyle(catObj?.slug ?? catObj?.name);
+                          return (
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 4,
+                                paddingHorizontal: 7,
+                                paddingVertical: 2.5,
+                                borderRadius: 999,
+                                backgroundColor: catStyle.badgeBg,
+                                borderWidth: 1,
+                                borderColor: catStyle.badgeBorder,
+                              }}
+                            >
+                              <View
+                                style={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: 3,
+                                  backgroundColor: catStyle.color,
+                                }}
+                              />
+                              <Text style={{ fontSize: 10.5, fontWeight: "700", color: colors.text }}>
+                                {catObj?.name ?? catStyle.label}
+                              </Text>
+                            </View>
+                          );
+                        })()}
+                      </View>
+                      <View
+                        style={{
+                          backgroundColor: statusBg,
+                          borderColor: statusColor,
+                          borderWidth: 1,
+                          paddingHorizontal: 9,
+                          paddingVertical: 3.5,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: "800",
+                            textTransform: "uppercase",
+                            color: statusColor,
+                          }}
+                        >
+                          {statusLabels[rep.status] ?? rep.status}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text
+                      numberOfLines={3}
+                      style={{
+                        fontSize: 14,
+                        color: colors.text,
+                        lineHeight: 20,
+                      }}
+                    >
+                      {rep.description}
+                    </Text>
+
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 6,
+                        marginTop: 4,
+                        paddingTop: 8,
+                        borderTopWidth: 1,
+                        borderTopColor: colors.border,
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: 11,
-                          fontWeight: "800",
-                          textTransform: "uppercase",
-                          color: statusColor,
+                          fontSize: 11.5,
+                          color: colors.textMuted,
+                          flexShrink: 1,
                         }}
                       >
-                        {statusLabels[rep.status] ?? rep.status}
+                        {dateLabel(rep.created_at)}
+                        {rep.neighborhood ? ` · ${rep.neighborhood}` : ""}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "700",
+                          color: "#60a5fa",
+                        }}
+                      >
+                        Ver detalle →
                       </Text>
                     </View>
-                  </View>
+                  </Pressable>
+                );
+              })}
+          </Screen>
+        )}
 
-                  <Text
-                    numberOfLines={3}
-                    style={{
-                      fontSize: 14,
-                      color: colors.text,
-                      lineHeight: 20,
-                    }}
-                  >
-                    {rep.description}
-                  </Text>
-
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginTop: 4,
-                      paddingTop: 8,
-                      borderTopWidth: 1,
-                      borderTopColor: "rgba(255, 255, 255, 0.06)",
-                    }}
-                  >
-                    <Text style={{ fontSize: 11.5, color: colors.textMuted }}>
-                      {dateLabel(rep.created_at)}
-                      {rep.neighborhood ? ` · ${rep.neighborhood}` : ""}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "700",
-                        color: "#60a5fa",
-                      }}
-                    >
-                      Ver detalle →
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-        </Screen>
-      )}
-
-      {/* ============================================================ */}
-      {/* VISTA 3: MI PERFIL Y SESIÓN                                  */}
-      {/* ============================================================ */}
-      {activeTab === "profile" && (
-        <Screen contentStyle={{ paddingBottom: 100 }}>
-          <BrandHeader
-            title="Mi perfil"
-            subtitle="Información de tu cuenta ciudadana y ajustes de la app."
-          />
-
-          {/* Tarjeta de información del usuario */}
-          <View style={[styles.card, { alignItems: "center", paddingVertical: 24 }]}>
-            <View
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: 36,
-                backgroundColor: "rgba(0, 210, 238, 0.15)",
-                borderColor: "#00d2ee",
-                borderWidth: 2,
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 12,
-              }}
-            >
-              <Text style={{ fontSize: 26, fontWeight: "800", color: "#00d2ee" }}>
-                {(userProfile.data?.email ?? "C").slice(0, 1).toUpperCase()}
-              </Text>
-            </View>
-
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: "800",
-                color: colors.text,
-                marginBottom: 2,
-              }}
-            >
-              {userProfile.data?.email ?? "Ciudadano Tuxtleco"}
-            </Text>
-
-            <View
-              style={{
-                backgroundColor: "rgba(37, 99, 235, 0.2)",
-                borderColor: "#3b82f6",
-                borderWidth: 1,
-                paddingHorizontal: 10,
-                paddingVertical: 3,
-                borderRadius: 12,
-                marginTop: 4,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: "700",
-                  color: "#93c5fd",
-                  textTransform: "uppercase",
-                }}
-              >
-                Rol: Ciudadano
-              </Text>
-            </View>
-
-            <View
-              style={{
-                width: "100%",
-                marginTop: 20,
-                paddingTop: 16,
-                borderTopWidth: 1,
-                borderTopColor: "rgba(255, 255, 255, 0.08)",
-                gap: 8,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text style={{ fontSize: 13, color: colors.textMuted }}>
-                  Correo electrónico:
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "600",
-                    color: colors.text,
-                  }}
-                >
-                  {userProfile.data?.email || "No disponible"}
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text style={{ fontSize: 13, color: colors.textMuted }}>
-                  ID de usuario:
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-                    color: colors.textSecondary,
-                  }}
-                >
-                  {session.uid ? `${session.uid.slice(0, 12)}…` : "—"}
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text style={{ fontSize: 13, color: colors.textMuted }}>
-                  Reportes registrados:
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "700",
-                    color: "#00d2ee",
-                  }}
-                >
-                  {reportsCount}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Notificaciones */}
-          <View style={styles.card}>
-            <Text style={styles.heading}>Notificaciones de seguimiento</Text>
-            <Text style={styles.small}>
-              Recibe avisos en tu teléfono cada vez que una cuadrilla atienda o solucione una de tus incidencias.
-            </Text>
-            {pushStatusMessage ? (
-              <View
-                style={{
-                  backgroundColor: "rgba(0, 210, 238, 0.1)",
-                  padding: 10,
-                  borderRadius: 6,
-                  borderWidth: 1,
-                  borderColor: "rgba(0, 210, 238, 0.3)",
-                }}
-              >
-                <Text style={{ fontSize: 12.5, color: "#00d2ee" }}>
-                  {pushStatusMessage}
-                </Text>
-              </View>
-            ) : null}
-            <Button
-              secondary
-              title={
-                pushRegistering
-                  ? "Configurando notificaciones…"
-                  : "Activar notificaciones en este dispositivo"
-              }
-              disabled={pushRegistering}
-              onPress={() => void handleRegisterPush()}
+        {/* ============================================================ */}
+        {/* VISTA 3: MI PERFIL Y SESIÓN                                  */}
+        {/* ============================================================ */}
+        {activeTab === "profile" && (
+          <Screen hasTabBar>
+            <BrandHeader
+              title="Mi perfil"
+              subtitle="Información de tu cuenta ciudadana y ajustes de la app."
             />
-          </View>
 
-          {/* Información institucional */}
-          <View style={styles.card}>
-            <Text style={styles.heading}>H. Ayuntamiento de Tuxtla Gutiérrez</Text>
-            <Text style={styles.small}>
-              Atención Ciudadana Oficial y Servicios Públicos Municipales.
-            </Text>
-            <View style={{ gap: 6, marginTop: 4 }}>
-              <Pressable
-                onPress={() => void Linking.openURL("tel:072")}
+            {/* Tarjeta de información del usuario */}
+            <Card style={{ alignItems: "center", paddingVertical: 22 }}>
+              <View
                 style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  paddingVertical: 6,
-                }}
-              >
-                <Text style={{ fontSize: 13, color: colors.text }}>
-                  Línea de atención ciudadana:
-                </Text>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#60a5fa" }}>
-                  072
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() =>
-                  void Linking.openURL("https://www.tuxtla.gob.mx")
-                }
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  paddingVertical: 6,
-                }}
-              >
-                <Text style={{ fontSize: 13, color: colors.text }}>
-                  Portal municipal:
-                </Text>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#60a5fa" }}>
-                  tuxtla.gob.mx
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Cerrar sesión y Eliminar cuenta */}
-          <View style={[styles.card, { borderColor: "rgba(220, 38, 38, 0.3)" }]}>
-            <Text style={[styles.heading, { color: colors.text }]}>
-              Cuenta y sesión
-            </Text>
-            <Text style={styles.small}>
-              Puedes cerrar tu sesión actual o eliminar permanentemente tu cuenta ciudadana.
-            </Text>
-            <Button
-              secondary
-              title="Cerrar sesión"
-              onPress={handleLogout}
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Eliminar cuenta"
-              disabled={deletingAccount}
-              onPress={handleDeleteAccount}
-              style={({ pressed }) => [
-                {
-                  backgroundColor: pressed
-                    ? "rgba(220, 38, 38, 0.25)"
-                    : "rgba(220, 38, 38, 0.12)",
-                  borderColor: "#dc2626",
-                  borderWidth: 1.5,
-                  borderRadius: 10,
-                  paddingVertical: 14,
+                  width: 68,
+                  height: 68,
+                  borderRadius: 34,
+                  backgroundColor: "rgba(0, 210, 238, 0.15)",
+                  borderColor: "#00d2ee",
+                  borderWidth: 2,
                   alignItems: "center",
                   justifyContent: "center",
-                  marginTop: 4,
-                  opacity: deletingAccount ? 0.5 : 1,
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  color: "#ef4444",
-                  fontSize: 15,
-                  fontWeight: "800",
-                  letterSpacing: 0.3,
+                  marginBottom: 10,
                 }}
               >
-                {deletingAccount ? "Eliminando cuenta…" : "Eliminar cuenta"}
+                <Text style={{ fontSize: 24, fontWeight: "800", color: "#00d2ee" }}>
+                  {(userProfile.data?.email ?? "C").slice(0, 1).toUpperCase()}
+                </Text>
+              </View>
+
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+                style={{
+                  fontSize: 17,
+                  fontWeight: "800",
+                  color: colors.text,
+                  marginBottom: 2,
+                  maxWidth: "100%",
+                  textAlign: "center",
+                }}
+              >
+                {userProfile.data?.email ?? "Ciudadano Tuxtleco"}
+              </Text>
+
+              <View
+                style={{
+                  backgroundColor: "rgba(37, 99, 235, 0.2)",
+                  borderColor: "#3b82f6",
+                  borderWidth: 1,
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  borderRadius: 12,
+                  marginTop: 4,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "700",
+                    color: mode === "dark" ? "#93c5fd" : "#1e40af",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Rol: Ciudadano
+                </Text>
+              </View>
+
+              <View
+                style={{
+                  width: "100%",
+                  marginTop: 18,
+                  paddingTop: 14,
+                  borderTopWidth: 1,
+                  borderTopColor: colors.border,
+                  gap: 10,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                    Correo electrónico:
+                  </Text>
+                  <Text
+                    selectable
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.75}
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: colors.text,
+                      flexShrink: 1,
+                      textAlign: "right",
+                    }}
+                  >
+                    {userProfile.data?.email || "No disponible"}
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                    ID de usuario:
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+                      color: colors.textSecondary,
+                    }}
+                  >
+                    {session.uid ? `${session.uid.slice(0, 12)}…` : "—"}
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                    Reportes registrados:
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "700",
+                      color: "#00d2ee",
+                    }}
+                  >
+                    {reportsCount}
+                  </Text>
+                </View>
+              </View>
+            </Card>
+
+            {/* Notificaciones */}
+            <Card>
+              <Heading>Notificaciones de seguimiento</Heading>
+              <Text style={styles.small}>
+                Recibe avisos en tu teléfono cada vez que una cuadrilla atienda o solucione una de tus incidencias.
+              </Text>
+              {pushStatusMessage ? (
+                <View
+                  style={{
+                    backgroundColor: "rgba(0, 210, 238, 0.1)",
+                    padding: 10,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: "rgba(0, 210, 238, 0.3)",
+                  }}
+                >
+                  <Text style={{ fontSize: 12.5, color: "#00d2ee" }}>
+                    {pushStatusMessage}
+                  </Text>
+                </View>
+              ) : null}
+              <Button
+                secondary
+                title={
+                  pushRegistering
+                    ? "Configurando notificaciones…"
+                    : "Activar notificaciones en este dispositivo"
+                }
+                disabled={pushRegistering}
+                onPress={() => void handleRegisterPush()}
+              />
+            </Card>
+
+            {/* Información institucional */}
+            <Card>
+              <Heading>H. Ayuntamiento de Tuxtla Gutiérrez</Heading>
+              <Text style={styles.small}>
+                Atención Ciudadana Oficial y Servicios Públicos Municipales.
+              </Text>
+              <View style={{ gap: 6, marginTop: 4 }}>
+                <Pressable
+                  onPress={() => void Linking.openURL("tel:072")}
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 6,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: colors.text }}>
+                    Línea de atención ciudadana:
+                  </Text>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#60a5fa" }}>
+                    072
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    void Linking.openURL("https://www.tuxtla.gob.mx")
+                  }
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 6,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: colors.text }}>
+                    Portal municipal:
+                  </Text>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#60a5fa" }}>
+                    tuxtla.gob.mx
+                  </Text>
+                </Pressable>
+              </View>
+            </Card>
+
+            {/* Apartado discreto y desplegable de Donaciones Voluntarias */}
+            <DonationSection />
+
+            {/* Cerrar sesión y Eliminar cuenta */}
+            <Card style={{ borderColor: "rgba(220, 38, 38, 0.3)" }}>
+              <Heading>Cuenta y sesión</Heading>
+              <Text style={styles.small}>
+                Puedes cerrar tu sesión actual o eliminar permanentemente tu cuenta ciudadana.
+              </Text>
+              <Button
+                secondary
+                title="Cerrar sesión"
+                onPress={handleLogout}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Eliminar cuenta"
+                disabled={deletingAccount}
+                onPress={handleDeleteAccount}
+                style={({ pressed }) => [
+                  {
+                    backgroundColor: pressed
+                      ? "rgba(220, 38, 38, 0.25)"
+                      : "rgba(220, 38, 38, 0.12)",
+                    borderColor: "#dc2626",
+                    borderWidth: 1.5,
+                    borderRadius: 10,
+                    paddingVertical: 14,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginTop: 4,
+                    opacity: deletingAccount ? 0.5 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: "#ef4444",
+                    fontSize: 15,
+                    fontWeight: "800",
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  {deletingAccount ? "Eliminando cuenta…" : "Eliminar cuenta"}
+                </Text>
+              </Pressable>
+            </Card>
+          </Screen>
+        )}
+      </View>
+
+      {/* ============================================================ */}
+      {/* BARRA DE NAVEGACIÓN INFERIOR (BOTTOM TABS - NO ABSOLUTA)     */}
+      {/* ============================================================ */}
+      {!keyboardVisible && (
+        <View
+          style={{
+            backgroundColor:
+              mode === "dark"
+                ? "rgba(10, 17, 32, 0.98)"
+                : "rgba(255, 255, 255, 0.98)",
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            paddingBottom: Math.max(insets.bottom, 10),
+            paddingTop: 8,
+            paddingHorizontal: isCompact ? 8 : 16,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 640,
+              alignSelf: "center",
+              flexDirection: "row",
+              justifyContent: "space-around",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            {/* Tab 1: Reportar */}
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityLabel="Apartado de Reportar Incidencias"
+              onPress={() => setActiveTab("report")}
+              style={{
+                flex: 1,
+                alignItems: "center",
+                paddingVertical: 8,
+                paddingHorizontal: 4,
+                borderRadius: 10,
+                backgroundColor:
+                  activeTab === "report"
+                    ? "rgba(0, 210, 238, 0.12)"
+                    : "transparent",
+              }}
+            >
+              <View
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor:
+                    activeTab === "report" ? "#00d2ee" : "transparent",
+                  marginBottom: 4,
+                }}
+              />
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+                maxFontSizeMultiplier={1.15}
+                style={{
+                  fontSize: isCompact ? 11.5 : 12.5,
+                  fontWeight: activeTab === "report" ? "800" : "500",
+                  color: activeTab === "report" ? "#00d2ee" : colors.textMuted,
+                }}
+              >
+                Reportar
+              </Text>
+            </Pressable>
+
+            {/* Tab 2: Mis Reportes */}
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityLabel="Apartado de Mis Reportes"
+              onPress={() => setActiveTab("my_reports")}
+              style={{
+                flex: 1,
+                alignItems: "center",
+                paddingVertical: 8,
+                paddingHorizontal: 4,
+                borderRadius: 10,
+                position: "relative",
+                backgroundColor:
+                  activeTab === "my_reports"
+                    ? "rgba(0, 210, 238, 0.12)"
+                    : "transparent",
+              }}
+            >
+              <View
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor:
+                    activeTab === "my_reports" ? "#00d2ee" : "transparent",
+                  marginBottom: 4,
+                }}
+              />
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 4,
+                }}
+              >
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                  maxFontSizeMultiplier={1.15}
+                  style={{
+                    fontSize: isCompact ? 11.5 : 12.5,
+                    fontWeight: activeTab === "my_reports" ? "800" : "500",
+                    color:
+                      activeTab === "my_reports" ? "#00d2ee" : colors.textMuted,
+                  }}
+                >
+                  Mis reportes
+                </Text>
+                {reportsCount > 0 && (
+                  <View
+                    style={{
+                      backgroundColor: "#2563eb",
+                      borderRadius: 10,
+                      minWidth: 18,
+                      height: 18,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      paddingHorizontal: 5,
+                    }}
+                  >
+                    <Text
+                      maxFontSizeMultiplier={1.1}
+                      style={{
+                        color: "#ffffff",
+                        fontSize: 10,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {reportsCount > 99 ? "99+" : reportsCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </Pressable>
+
+            {/* Tab 3: Mi Perfil */}
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityLabel="Apartado de Mi Perfil"
+              onPress={() => setActiveTab("profile")}
+              style={{
+                flex: 1,
+                alignItems: "center",
+                paddingVertical: 8,
+                paddingHorizontal: 4,
+                borderRadius: 10,
+                backgroundColor:
+                  activeTab === "profile"
+                    ? "rgba(0, 210, 238, 0.12)"
+                    : "transparent",
+              }}
+            >
+              <View
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor:
+                    activeTab === "profile" ? "#00d2ee" : "transparent",
+                  marginBottom: 4,
+                }}
+              />
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+                maxFontSizeMultiplier={1.15}
+                style={{
+                  fontSize: isCompact ? 11.5 : 12.5,
+                  fontWeight: activeTab === "profile" ? "800" : "500",
+                  color: activeTab === "profile" ? "#00d2ee" : colors.textMuted,
+                }}
+              >
+                Mi perfil
               </Text>
             </Pressable>
           </View>
-        </Screen>
+        </View>
       )}
-
-      {/* ============================================================ */}
-      {/* BARRA DE NAVEGACIÓN INFERIOR (BOTTOM TABS)                   */}
-      {/* ============================================================ */}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor:
-            mode === "dark" ? "rgba(10, 17, 32, 0.96)" : "rgba(255, 255, 255, 0.96)",
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          paddingBottom: Math.max(insets.bottom, 12),
-          paddingTop: 10,
-          paddingHorizontal: 16,
-          flexDirection: "row",
-          justifyContent: "space-around",
-          alignItems: "center",
-        }}
-      >
-        {/* Tab 1: Reportar */}
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityLabel="Apartado de Reportar Incidencias"
-          onPress={() => setActiveTab("report")}
-          style={{
-            flex: 1,
-            alignItems: "center",
-            paddingVertical: 8,
-            borderRadius: 10,
-            backgroundColor:
-              activeTab === "report"
-                ? "rgba(0, 210, 238, 0.12)"
-                : "transparent",
-          }}
-        >
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: activeTab === "report" ? "#00d2ee" : "transparent",
-              marginBottom: 4,
-            }}
-          />
-          <Text
-            style={{
-              fontSize: 12.5,
-              fontWeight: activeTab === "report" ? "800" : "500",
-              color: activeTab === "report" ? "#00d2ee" : colors.textMuted,
-            }}
-          >
-            Reportar
-          </Text>
-        </Pressable>
-
-        {/* Tab 2: Mis Reportes */}
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityLabel="Apartado de Mis Reportes"
-          onPress={() => setActiveTab("my_reports")}
-          style={{
-            flex: 1,
-            alignItems: "center",
-            paddingVertical: 8,
-            borderRadius: 10,
-            position: "relative",
-            backgroundColor:
-              activeTab === "my_reports"
-                ? "rgba(0, 210, 238, 0.12)"
-                : "transparent",
-          }}
-        >
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: activeTab === "my_reports" ? "#00d2ee" : "transparent",
-              marginBottom: 4,
-            }}
-          />
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text
-              style={{
-                fontSize: 12.5,
-                fontWeight: activeTab === "my_reports" ? "800" : "500",
-                color: activeTab === "my_reports" ? "#00d2ee" : colors.textMuted,
-              }}
-            >
-              Mis reportes
-            </Text>
-            {reportsCount > 0 && (
-              <View
-                style={{
-                  backgroundColor: "#2563eb",
-                  borderRadius: 10,
-                  minWidth: 18,
-                  height: 18,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingHorizontal: 5,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#ffffff",
-                    fontSize: 10,
-                    fontWeight: "bold",
-                  }}
-                >
-                  {reportsCount > 99 ? "99+" : reportsCount}
-                </Text>
-              </View>
-            )}
-          </View>
-        </Pressable>
-
-        {/* Tab 3: Mi Perfil */}
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityLabel="Apartado de Mi Perfil"
-          onPress={() => setActiveTab("profile")}
-          style={{
-            flex: 1,
-            alignItems: "center",
-            paddingVertical: 8,
-            borderRadius: 10,
-            backgroundColor:
-              activeTab === "profile"
-                ? "rgba(0, 210, 238, 0.12)"
-                : "transparent",
-          }}
-        >
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: activeTab === "profile" ? "#00d2ee" : "transparent",
-              marginBottom: 4,
-            }}
-          />
-          <Text
-            style={{
-              fontSize: 12.5,
-              fontWeight: activeTab === "profile" ? "800" : "500",
-              color: activeTab === "profile" ? "#00d2ee" : colors.textMuted,
-            }}
-          >
-            Mi perfil
-          </Text>
-        </Pressable>
-      </View>
     </View>
   );
 }

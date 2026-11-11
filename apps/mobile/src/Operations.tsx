@@ -7,6 +7,7 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -39,7 +40,9 @@ import {
   Field,
   styles,
   BrandHeader,
+  DonationSection,
   useTheme,
+  useResponsiveLayout,
 } from "./ui";
 
 type OpsTab = "list" | "heatmap" | "profile";
@@ -48,9 +51,24 @@ export default function Operations() {
   const s = useSession(),
     cache = useQueryClient(),
     { colors, mode } = useTheme(),
-    insets = useSafeAreaInsets();
+    insets = useSafeAreaInsets(),
+    { mapHeight, isCompact } = useResponsiveLayout();
 
   const [activeTab, setActiveTab] = useState<OpsTab>("list");
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () =>
+      setKeyboardVisible(true),
+    );
+    const hideSub = Keyboard.addListener("keyboardDidHide", () =>
+      setKeyboardVisible(false),
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
   const [filters, setFilters] = useState<ReportFilters>({ page: 0 }),
     [search, setSearch] = useState(""),
     [groupDuplicates, setGroupDuplicates] = useState(true),
@@ -194,11 +212,12 @@ export default function Operations() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* ============================================================ */}
-      {/* TAB 1: ASIGNACIONES Y REPORTES OPERATIVOS                    */}
-      {/* ============================================================ */}
-      {activeTab === "list" && (
-        <Screen contentStyle={{ paddingBottom: 105 }}>
+      <View style={{ flex: 1 }}>
+        {/* ============================================================ */}
+        {/* TAB 1: ASIGNACIONES Y REPORTES OPERATIVOS                    */}
+        {/* ============================================================ */}
+        {activeTab === "list" && (
+          <Screen hasTabBar>
           <BrandHeader
             title={
               s.role === "admin" ? "Operación de la ciudad" : "Mis asignaciones"
@@ -631,6 +650,8 @@ export default function Operations() {
                     flexDirection: "row",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 8,
                   }}
                 >
                   <Text
@@ -866,7 +887,7 @@ export default function Operations() {
       {/* TAB 2: MAPA DE CALOR POR CATEGORÍA (RANGO CORTO)             */}
       {/* ============================================================ */}
       {activeTab === "heatmap" && (
-        <Screen contentStyle={{ paddingBottom: 105 }}>
+        <Screen hasTabBar>
           <BrandHeader
             title="Mapa de calor operativo"
             subtitle={`Agrupación inteligente en rango corto (≤ ${DEFAULT_CLUSTER_RADIUS_M} m) con colores por tipo de incidencia.`}
@@ -924,7 +945,7 @@ export default function Operations() {
             <OpenStreetMap
               clusters={mobileHeatClusters}
               radiusMeters={DEFAULT_CLUSTER_RADIUS_M}
-              height={340}
+              height={Math.max(mapHeight, 260)}
               isDark={mode === "dark"}
               onSelectCluster={(id) => router.push(`/report/${id}`)}
             />
@@ -959,6 +980,8 @@ export default function Operations() {
                     flexDirection: "row",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 8,
                   }}
                 >
                   <Text
@@ -992,7 +1015,7 @@ export default function Operations() {
       {/* TAB 3: PERFIL OPERATIVO Y TURNO                              */}
       {/* ============================================================ */}
       {activeTab === "profile" && (
-        <Screen contentStyle={{ paddingBottom: 105 }}>
+        <Screen hasTabBar>
           <BrandHeader
             title="Mi perfil operativo"
             subtitle="Información de tu cuenta, áreas asignadas y notificaciones."
@@ -1103,6 +1126,8 @@ export default function Operations() {
             {message ? <Text style={styles.subtitle}>{message}</Text> : null}
           </View>
 
+          <DonationSection />
+
           <Button
             secondary
             title="Cerrar sesión"
@@ -1161,162 +1186,185 @@ export default function Operations() {
           )}
         </Screen>
       )}
-
-      {/* ============================================================ */}
-      {/* BARRA DE NAVEGACIÓN INFERIOR OPERATIVA                       */}
-      {/* ============================================================ */}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor:
-            mode === "dark"
-              ? "rgba(10, 17, 32, 0.96)"
-              : "rgba(255, 255, 255, 0.96)",
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          paddingBottom: Math.max(insets.bottom, 12),
-          paddingTop: 10,
-          paddingHorizontal: 16,
-          flexDirection: "row",
-          justifyContent: "space-around",
-          alignItems: "center",
-        }}
-      >
-        <Pressable
-          accessibilityRole="tab"
-          onPress={() => setActiveTab("list")}
-          style={{
-            flex: 1,
-            alignItems: "center",
-            paddingVertical: 8,
-            borderRadius: 10,
-            backgroundColor:
-              activeTab === "list"
-                ? "rgba(37, 99, 235, 0.14)"
-                : "transparent",
-          }}
-        >
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor:
-                activeTab === "list"
-                  ? mode === "dark"
-                    ? "#60a5fa"
-                    : "#1d4ed8"
-                  : "transparent",
-              marginBottom: 4,
-            }}
-          />
-          <Text
-            style={{
-              fontSize: 12.5,
-              fontWeight: activeTab === "list" ? "800" : "500",
-              color:
-                activeTab === "list"
-                  ? mode === "dark"
-                    ? "#60a5fa"
-                    : "#1d4ed8"
-                  : colors.textMuted,
-            }}
-          >
-            Asignaciones
-          </Text>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="tab"
-          onPress={() => setActiveTab("heatmap")}
-          style={{
-            flex: 1,
-            alignItems: "center",
-            paddingVertical: 8,
-            borderRadius: 10,
-            backgroundColor:
-              activeTab === "heatmap"
-                ? "rgba(37, 99, 235, 0.14)"
-                : "transparent",
-          }}
-        >
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor:
-                activeTab === "heatmap"
-                  ? mode === "dark"
-                    ? "#60a5fa"
-                    : "#1d4ed8"
-                  : "transparent",
-              marginBottom: 4,
-            }}
-          />
-          <Text
-            style={{
-              fontSize: 12.5,
-              fontWeight: activeTab === "heatmap" ? "800" : "500",
-              color:
-                activeTab === "heatmap"
-                  ? mode === "dark"
-                    ? "#60a5fa"
-                    : "#1d4ed8"
-                  : colors.textMuted,
-            }}
-          >
-            Mapa de calor
-          </Text>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="tab"
-          onPress={() => setActiveTab("profile")}
-          style={{
-            flex: 1,
-            alignItems: "center",
-            paddingVertical: 8,
-            borderRadius: 10,
-            backgroundColor:
-              activeTab === "profile"
-                ? "rgba(37, 99, 235, 0.14)"
-                : "transparent",
-          }}
-        >
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor:
-                activeTab === "profile"
-                  ? mode === "dark"
-                    ? "#60a5fa"
-                    : "#1d4ed8"
-                  : "transparent",
-              marginBottom: 4,
-            }}
-          />
-          <Text
-            style={{
-              fontSize: 12.5,
-              fontWeight: activeTab === "profile" ? "800" : "500",
-              color:
-                activeTab === "profile"
-                  ? mode === "dark"
-                    ? "#60a5fa"
-                    : "#1d4ed8"
-                  : colors.textMuted,
-            }}
-          >
-            Mi perfil
-          </Text>
-        </Pressable>
       </View>
+
+      {/* ============================================================ */}
+      {/* BARRA DE NAVEGACIÓN INFERIOR OPERATIVA (NO ABSOLUTA)         */}
+      {/* ============================================================ */}
+      {!keyboardVisible && (
+        <View
+          style={{
+            backgroundColor:
+              mode === "dark"
+                ? "rgba(10, 17, 32, 0.98)"
+                : "rgba(255, 255, 255, 0.98)",
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            paddingBottom: Math.max(insets.bottom, 10),
+            paddingTop: 8,
+            paddingHorizontal: isCompact ? 8 : 16,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 640,
+              alignSelf: "center",
+              flexDirection: "row",
+              justifyContent: "space-around",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <Pressable
+              accessibilityRole="tab"
+              onPress={() => setActiveTab("list")}
+              style={{
+                flex: 1,
+                alignItems: "center",
+                paddingVertical: 8,
+                paddingHorizontal: 4,
+                borderRadius: 10,
+                backgroundColor:
+                  activeTab === "list"
+                    ? "rgba(37, 99, 235, 0.14)"
+                    : "transparent",
+              }}
+            >
+              <View
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor:
+                    activeTab === "list"
+                      ? mode === "dark"
+                        ? "#60a5fa"
+                        : "#1d4ed8"
+                      : "transparent",
+                  marginBottom: 4,
+                }}
+              />
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+                maxFontSizeMultiplier={1.15}
+                style={{
+                  fontSize: isCompact ? 11.5 : 12.5,
+                  fontWeight: activeTab === "list" ? "800" : "500",
+                  color:
+                    activeTab === "list"
+                      ? mode === "dark"
+                        ? "#60a5fa"
+                        : "#1d4ed8"
+                      : colors.textMuted,
+                }}
+              >
+                Asignaciones
+              </Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="tab"
+              onPress={() => setActiveTab("heatmap")}
+              style={{
+                flex: 1,
+                alignItems: "center",
+                paddingVertical: 8,
+                paddingHorizontal: 4,
+                borderRadius: 10,
+                backgroundColor:
+                  activeTab === "heatmap"
+                    ? "rgba(37, 99, 235, 0.14)"
+                    : "transparent",
+              }}
+            >
+              <View
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor:
+                    activeTab === "heatmap"
+                      ? mode === "dark"
+                        ? "#60a5fa"
+                        : "#1d4ed8"
+                      : "transparent",
+                  marginBottom: 4,
+                }}
+              />
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+                maxFontSizeMultiplier={1.15}
+                style={{
+                  fontSize: isCompact ? 11.5 : 12.5,
+                  fontWeight: activeTab === "heatmap" ? "800" : "500",
+                  color:
+                    activeTab === "heatmap"
+                      ? mode === "dark"
+                        ? "#60a5fa"
+                        : "#1d4ed8"
+                      : colors.textMuted,
+                }}
+              >
+                Mapa de calor
+              </Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="tab"
+              onPress={() => setActiveTab("profile")}
+              style={{
+                flex: 1,
+                alignItems: "center",
+                paddingVertical: 8,
+                paddingHorizontal: 4,
+                borderRadius: 10,
+                backgroundColor:
+                  activeTab === "profile"
+                    ? "rgba(37, 99, 235, 0.14)"
+                    : "transparent",
+              }}
+            >
+              <View
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor:
+                    activeTab === "profile"
+                      ? mode === "dark"
+                        ? "#60a5fa"
+                        : "#1d4ed8"
+                      : "transparent",
+                  marginBottom: 4,
+                }}
+              />
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+                maxFontSizeMultiplier={1.15}
+                style={{
+                  fontSize: isCompact ? 11.5 : 12.5,
+                  fontWeight: activeTab === "profile" ? "800" : "500",
+                  color:
+                    activeTab === "profile"
+                      ? mode === "dark"
+                        ? "#60a5fa"
+                        : "#1d4ed8"
+                      : colors.textMuted,
+                }}
+              >
+                Mi perfil
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
     </View>
   );
 }

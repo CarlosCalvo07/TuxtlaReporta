@@ -13,6 +13,10 @@ import {
   StyleSheet,
   View,
   Image,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  useWindowDimensions,
   type TextInputProps,
 } from "react-native";
 import * as SecureStore from "expo-secure-store";
@@ -265,6 +269,25 @@ export const styles = StyleSheet.create({
   },
 });
 
+export function useResponsiveLayout() {
+  const { width, height, fontScale } = useWindowDimensions();
+  const isCompact = width < 360;
+  const isTablet = width >= 700;
+  const horizontalPadding = isCompact ? 14 : isTablet ? 28 : 18;
+  const cardPadding = isCompact ? 14 : 18;
+  const mapHeight = Math.round(Math.min(Math.max(height * 0.32, 200), 300));
+  return {
+    width,
+    height,
+    fontScale,
+    isCompact,
+    isTablet,
+    horizontalPadding,
+    cardPadding,
+    mapHeight,
+  };
+}
+
 export function BrandHeader({
   title,
   subtitle,
@@ -275,40 +298,65 @@ export function BrandHeader({
   showToggle?: boolean;
 }) {
   const { mode, toggle, colors } = useTheme();
+  const { isCompact } = useResponsiveLayout();
 
   return (
-    <View style={{ marginBottom: 18 }}>
+    <View style={{ marginBottom: isCompact ? 12 : 16 }}>
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: 12,
+          gap: 8,
+          marginBottom: 10,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: isCompact ? 8 : 11,
+            flex: 1,
+            flexShrink: 1,
+          }}
+        >
           <Image
             source={require("../assets/logo.png")}
-            style={{ width: 44, height: 44 }}
+            style={{
+              width: isCompact ? 38 : 44,
+              height: isCompact ? 38 : 44,
+              flexShrink: 0,
+            }}
             resizeMode="contain"
           />
-          <View>
+          <View style={{ flex: 1, flexShrink: 1 }}>
             <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.78}
+              maxFontSizeMultiplier={1.15}
               style={{
-                fontSize: 18,
+                fontSize: isCompact ? 16 : 18,
                 fontWeight: "900",
                 color: colors.text,
-                letterSpacing: 0.5,
+                letterSpacing: 0.4,
               }}
             >
-              TUXTLA <Text style={{ color: mode === "dark" ? "#60a5fa" : "#1e40af" }}>REPORTA</Text>
+              TUXTLA{" "}
+              <Text style={{ color: mode === "dark" ? "#60a5fa" : "#1e40af" }}>
+                REPORTA
+              </Text>
             </Text>
             <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+              maxFontSizeMultiplier={1.15}
               style={{
-                fontSize: 9.5,
+                fontSize: isCompact ? 8.5 : 9.5,
                 fontWeight: "700",
                 color: mode === "dark" ? "#f59e0b" : "#b45309",
-                letterSpacing: 1.5,
+                letterSpacing: isCompact ? 0.8 : 1.3,
               }}
             >
               GOBIERNO MUNICIPAL DE TUXTLA
@@ -319,25 +367,26 @@ export function BrandHeader({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cambiar modo claro u oscuro"
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             onPress={toggle}
             style={({ pressed }) => ({
               flexDirection: "row",
               alignItems: "center",
-              gap: 6,
+              flexShrink: 0,
               backgroundColor: colors.card,
               borderWidth: 1.5,
               borderColor: colors.border,
-              paddingVertical: 8,
-              paddingHorizontal: 13,
+              paddingVertical: isCompact ? 6 : 8,
+              paddingHorizontal: isCompact ? 10 : 12,
               borderRadius: 20,
-              elevation: 3,
+              elevation: 2,
               opacity: pressed ? 0.75 : 1,
             })}
           >
             <Text
+              maxFontSizeMultiplier={1.15}
               style={{
-                fontSize: 12.5,
+                fontSize: isCompact ? 11.5 : 12.5,
                 fontWeight: "700",
                 color: colors.text,
               }}
@@ -348,10 +397,31 @@ export function BrandHeader({
         )}
       </View>
       {title && (
-        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+        <Text
+          maxFontSizeMultiplier={1.2}
+          style={[
+            styles.title,
+            {
+              color: colors.text,
+              fontSize: isCompact ? 22 : 26,
+            },
+          ]}
+        >
+          {title}
+        </Text>
       )}
       {subtitle && (
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        <Text
+          maxFontSizeMultiplier={1.25}
+          style={[
+            styles.subtitle,
+            {
+              color: colors.textSecondary,
+              fontSize: isCompact ? 12.5 : 13.5,
+              lineHeight: isCompact ? 18 : 20,
+            },
+          ]}
+        >
           {subtitle}
         </Text>
       )}
@@ -362,35 +432,55 @@ export function BrandHeader({
 export function Screen({
   children,
   safeTop = true,
+  hasTabBar = false,
   contentStyle,
 }: {
   children: ReactNode;
   safeTop?: boolean;
+  hasTabBar?: boolean;
   contentStyle?: any;
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { isCompact, horizontalPadding } = useResponsiveLayout();
 
-  const topInset = safeTop ? Math.max(insets.top + 10, 48) : 16;
-  const bottomInset = Math.max(insets.bottom + 24, 50);
+  const topInset = safeTop ? Math.max(insets.top + 8, 16) : 12;
+  const bottomInset = hasTabBar ? 24 : Math.max(insets.bottom + 24, 36);
 
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.background }]}
-      contentContainerStyle={[
-        styles.content,
-        {
-          paddingTop: topInset,
-          paddingBottom: bottomInset,
-          paddingLeft: Math.max(insets.left, 20),
-          paddingRight: Math.max(insets.right, 20),
-        },
-        contentStyle,
-      ]}
-      keyboardShouldPersistTaps="handled"
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {children}
-    </ScrollView>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.background }}
+        contentContainerStyle={[
+          styles.content,
+          {
+            flexGrow: 1,
+            paddingTop: topInset,
+            paddingBottom: bottomInset,
+            paddingLeft: Math.max(insets.left, horizontalPadding),
+            paddingRight: Math.max(insets.right, horizontalPadding),
+            gap: isCompact ? 12 : 16,
+          },
+          contentStyle,
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 640,
+            alignSelf: "center",
+            gap: isCompact ? 12 : 16,
+          }}
+        >
+          {children}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -402,6 +492,7 @@ export function Card({
   style?: any;
 }) {
   const { colors } = useTheme();
+  const { cardPadding, isCompact } = useResponsiveLayout();
   return (
     <View
       style={[
@@ -409,6 +500,8 @@ export function Card({
         {
           backgroundColor: colors.card,
           borderColor: colors.border,
+          padding: cardPadding,
+          gap: isCompact ? 10 : 13,
         },
         style,
       ]}
@@ -466,8 +559,10 @@ export function Button({
       ]}
     >
       <Text
+        maxFontSizeMultiplier={1.2}
         style={[
           styles.buttonText,
+          { textAlign: "center" },
           secondary && { color: colors.secondaryText },
         ]}
       >
@@ -818,5 +913,361 @@ export function Choices({
         })}
       </View>
     </View>
+  );
+}
+
+const DONATION_PRESETS = [
+  { id: "20", label: "$20 MXN", amount: 20 },
+  { id: "50", label: "$50 MXN", amount: 50 },
+  { id: "100", label: "$100 MXN", amount: 100 },
+  { id: "200", label: "$200 MXN", amount: 200 },
+  { id: "custom", label: "Otro monto", amount: 0 },
+] as const;
+
+const DONATION_METHODS = [
+  { id: "card", name: "Tarjeta bancaria" },
+  { id: "spei", name: "Transferencia SPEI" },
+  { id: "codi", name: "CoDi / QR" },
+];
+
+export function DonationSection({
+  compactTrigger = false,
+  defaultExpanded = false,
+}: {
+  compactTrigger?: boolean;
+  defaultExpanded?: boolean;
+}) {
+  const { colors, mode } = useTheme();
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [selectedPreset, setSelectedPreset] = useState<string>("50");
+  const [customAmount, setCustomAmount] = useState("");
+  const [method, setMethod] = useState("card");
+  const [donorNote, setDonorNote] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [receipt, setReceipt] = useState<{
+    folio: string;
+    amount: number;
+    methodName: string;
+    date: string;
+  } | null>(null);
+
+  const resolvedAmount =
+    selectedPreset === "custom"
+      ? Number(customAmount.replace(/\D/g, "")) || 0
+      : (DONATION_PRESETS.find((p) => p.id === selectedPreset)?.amount ?? 50);
+
+  function handleConfirmDonation() {
+    if (resolvedAmount < 10) {
+      Alert.alert(
+        "Monto mínimo",
+        "Por favor selecciona o ingresa un monto mínimo de $10 MXN para continuar.",
+      );
+      return;
+    }
+    setProcessing(true);
+    setTimeout(() => {
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const folio = `DON-2026-${randomNum}`;
+      const methodName =
+        DONATION_METHODS.find((m) => m.id === method)?.name ??
+        "Tarjeta bancaria";
+      const now = new Date().toLocaleString("es-MX", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+      setProcessing(false);
+      setReceipt({
+        folio,
+        amount: resolvedAmount,
+        methodName,
+        date: now,
+      });
+      Alert.alert(
+        "Aportación registrada",
+        `Muchas gracias por apoyar a Tuxtla Reporta con $${resolvedAmount} MXN.\n\nComprobante de demostración: ${folio}`,
+      );
+    }, 450);
+  }
+
+  if (compactTrigger && !expanded) {
+    return (
+      <View
+        style={{
+          width: "100%",
+          marginTop: 6,
+          paddingTop: 12,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 12,
+            color: colors.textSecondary,
+            textAlign: "center",
+          }}
+        >
+          ¿Te fue útil la aplicación? Puedes apoyar voluntariamente al proyecto.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Apoyar el proyecto con una donación voluntaria"
+          onPress={() => setExpanded(true)}
+          style={({ pressed }) => ({
+            paddingVertical: 8,
+            paddingHorizontal: 14,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: mode === "dark" ? "#38bdf8" : "#0284c7",
+            backgroundColor:
+              mode === "dark"
+                ? "rgba(56, 189, 248, 0.12)"
+                : "rgba(2, 132, 199, 0.08)",
+            opacity: pressed ? 0.75 : 1,
+          })}
+        >
+          <Text
+            style={{
+              fontSize: 12.5,
+              fontWeight: "700",
+              color: mode === "dark" ? "#38bdf8" : "#0284c7",
+            }}
+          >
+            Apoyar el proyecto (Donación opcional)
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <Card
+      style={
+        compactTrigger
+          ? {
+              width: "100%",
+              marginTop: 10,
+              borderColor:
+                mode === "dark"
+                  ? "rgba(56, 189, 248, 0.35)"
+                  : "rgba(2, 132, 199, 0.35)",
+            }
+          : undefined
+      }
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 8,
+        }}
+      >
+        <View style={{ flex: 1, minWidth: 180 }}>
+          <Heading>Apoyar el proyecto</Heading>
+          <Text style={[styles.small, { marginTop: 2 }]}>
+            Aportación voluntaria para mantenimiento y mejora de la plataforma
+            (Modo demostración).
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setExpanded((prev) => !prev)}
+          style={({ pressed }) => ({
+            paddingVertical: 7,
+            paddingHorizontal: 12,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: mode === "dark" ? "#3b82f6" : "#1d4ed8",
+            backgroundColor:
+              mode === "dark"
+                ? "rgba(37, 99, 235, 0.16)"
+                : "rgba(30, 64, 175, 0.08)",
+            opacity: pressed ? 0.75 : 1,
+          })}
+        >
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "700",
+              color: mode === "dark" ? "#93c5fd" : "#1e40af",
+            }}
+          >
+            {expanded ? "Ocultar" : "Donar ahora"}
+          </Text>
+        </Pressable>
+      </View>
+
+      {expanded && (
+        <View
+          style={{
+            marginTop: 6,
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            gap: 12,
+          }}
+        >
+          {receipt ? (
+            <View
+              style={{
+                backgroundColor: "rgba(16, 185, 129, 0.12)",
+                borderColor: "rgba(16, 185, 129, 0.45)",
+                borderWidth: 1,
+                borderRadius: 10,
+                padding: 14,
+                gap: 8,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: "800",
+                  color: "#10b981",
+                }}
+              >
+                ¡Muchas gracias por tu aportación!
+              </Text>
+              <Text style={{ fontSize: 12.5, color: colors.textSecondary }}>
+                Tu apoyo contribuye a mantener activa la plataforma ciudadana.
+              </Text>
+              <View
+                style={{
+                  backgroundColor: colors.inputBg,
+                  borderRadius: 8,
+                  padding: 10,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  gap: 4,
+                }}
+              >
+                <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                  Folio de comprobante:{" "}
+                  <Text style={{ fontWeight: "800", color: colors.text }}>
+                    {receipt.folio}
+                  </Text>
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                  Monto aportado:{" "}
+                  <Text style={{ fontWeight: "800", color: "#10b981" }}>
+                    ${receipt.amount} MXN
+                  </Text>
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                  Método:{" "}
+                  <Text style={{ fontWeight: "700", color: colors.text }}>
+                    {receipt.methodName}
+                  </Text>
+                </Text>
+                <Text style={{ fontSize: 11.5, color: colors.textMuted }}>
+                  Fecha: {receipt.date}
+                </Text>
+              </View>
+              <Button
+                secondary
+                title="Realizar otra aportación"
+                onPress={() => {
+                  setReceipt(null);
+                  setDonorNote("");
+                }}
+              />
+            </View>
+          ) : (
+            <>
+              <View>
+                <Text style={styles.label}>Selecciona un monto (MXN)</Text>
+                <View style={styles.row}>
+                  {DONATION_PRESETS.map((item) => {
+                    const active = selectedPreset === item.id;
+                    return (
+                      <Pressable
+                        key={item.id}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: active }}
+                        onPress={() => setSelectedPreset(item.id)}
+                        style={[
+                          styles.chip,
+                          {
+                            backgroundColor: active
+                              ? colors.chipActiveBg
+                              : colors.chipBg,
+                            borderColor: active
+                              ? colors.chipActiveBorder
+                              : colors.chipBorder,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.chipText,
+                            {
+                              color: active
+                                ? colors.chipTextActive
+                                : colors.chipText,
+                              fontWeight: active ? "800" : "600",
+                            },
+                          ]}
+                        >
+                          {item.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {selectedPreset === "custom" && (
+                <Field
+                  label="Ingresa el monto en pesos (MXN)"
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  placeholder="Ej. 150"
+                  value={customAmount}
+                  onChangeText={(txt) =>
+                    setCustomAmount(txt.replace(/\D/g, ""))
+                  }
+                />
+              )}
+
+              <Choices
+                label="Método de aportación (Simulador)"
+                options={DONATION_METHODS}
+                value={method}
+                onChange={setMethod}
+              />
+
+              <Field
+                label="Comentario opcional"
+                placeholder="Ej. Excelente iniciativa para la ciudad"
+                maxLength={120}
+                value={donorNote}
+                onChangeText={setDonorNote}
+              />
+
+              <Text style={styles.small}>
+                Nota: Los reportes municipales son gratuitos. Este apartado es
+                una simulación académica de donación voluntaria sin cargos
+                reales.
+              </Text>
+
+              <Button
+                title={
+                  processing
+                    ? "Procesando aportación…"
+                    : resolvedAmount > 0
+                      ? `Confirmar aportación de $${resolvedAmount} MXN`
+                      : "Confirmar aportación"
+                }
+                disabled={processing || resolvedAmount < 10}
+                onPress={handleConfirmDonation}
+              />
+            </>
+          )}
+        </View>
+      )}
+    </Card>
   );
 }

@@ -7,6 +7,8 @@ import type { CitizenRegistrationInput } from "@tuxtla/types";
 import { api } from "./backend";
 import {
   Button,
+  Card,
+  Heading,
   Field,
   Screen,
   styles,
@@ -77,7 +79,7 @@ export default function Auth() {
       />
       {register ? (
         <>
-          <View style={styles.card}>
+          <Card>
             {(
               [
                 {
@@ -193,9 +195,9 @@ export default function Auth() {
                 />
               )}
             />
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.heading}>Privacidad</Text>
+          </Card>
+          <Card>
+            <Heading>Privacidad</Heading>
             <Text style={styles.small}>
               Utilizamos tu cuenta para dar seguimiento a los reportes. La
               ubicación y las fotos permiten atender la incidencia. La CURP se
@@ -232,7 +234,7 @@ export default function Auth() {
                 </View>
               )}
             />
-          </View>
+          </Card>
           <Button
             title={busy ? "Registrando…" : "Crear cuenta"}
             disabled={busy}

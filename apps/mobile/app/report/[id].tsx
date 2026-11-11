@@ -182,6 +182,8 @@ export default function Detail() {
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: 8,
           marginBottom: 8,
         }}
       >
@@ -435,7 +437,7 @@ export default function Detail() {
           </View>
         )}
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 145 }}>
             <Button
               secondary
               title="Ver en Google Maps"
@@ -447,7 +449,7 @@ export default function Detail() {
             />
           </View>
           {s.role !== "citizen" && (
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 145 }}>
               <Button
                 secondary
                 title="Cómo llegar"
