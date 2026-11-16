@@ -4,6 +4,7 @@
     "development": { "developmentClient": true, "distribution": "internal" },
     "preview": {
       "distribution": "internal",
+      "autoIncrement": true,
       "android": { "buildType": "apk" },
       "ios": { "simulator": true },
       "env": {
